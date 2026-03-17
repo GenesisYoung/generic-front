@@ -1,1 +1,1 @@
-# generic-front
+# Generic ERP System Front-End
