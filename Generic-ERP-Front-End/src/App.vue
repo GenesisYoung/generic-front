@@ -1,11 +1,20 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { inject } from 'vue'
+import AppNavigation from '@/src/components/AppNavigation.vue'
+type Lan = Record<string, string>
+const lang: Lan | undefined = inject('lan')
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <v-responsive class="border rounded">
+    <v-app id="app">
+      <v-app-bar :title="lang?.title"></v-app-bar>
+      <AppNavigation />
+      <v-main>
+        <v-container> <router-view /> </v-container>
+      </v-main>
+    </v-app>
+  </v-responsive>
 </template>
 
 <style scoped></style>
