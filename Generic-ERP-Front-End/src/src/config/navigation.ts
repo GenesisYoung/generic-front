@@ -27,7 +27,7 @@ export const navigationItems: NavItem[] = [
   {
     titleKey: 'permissionManagement',
     icon: 'mdi-account-lock',
-    route: '/role-management',
+    route: '/permission-management',
     color: 'indigo',
   },
   {

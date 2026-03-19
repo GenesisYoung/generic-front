@@ -14,6 +14,13 @@ const mapping: Record<string, string> = {
   supplierManagement: '供应商管理',
   reportManagement: '报表管理',
   settings: '设置',
+  pageNotFoundTitle: '抱歉，页面未找到',
+  pageNotFoundMessage: '您访问的页面不存在或已被删除。',
+  goBackHome: '返回主页',
+  loginTitle: '欢迎登录通用企业资源系统',
+  loginUsername: '用户名',
+  loginPassword: '密码',
+  loginButton: '登录',
 }
 type Lan = typeof mapping
 export { mapping as lan }

@@ -10,6 +10,7 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 // Language Switching
 import { lan } from '@/lang/china_zh'
+import { darkTheme, lightTheme } from './theme/primary'
 
 import App from './App.vue'
 import router from './router'
@@ -18,6 +19,13 @@ const app = createApp(App)
 
 const vuetify = createVuetify({
   components,
+  theme: {
+    defaultTheme: 'darkTheme',
+    themes: {
+      lightTheme,
+      darkTheme,
+    },
+  },
   directives,
   icons: {
     defaultSet: 'mdi',

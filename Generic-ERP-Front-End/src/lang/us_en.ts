@@ -14,6 +14,9 @@ const mapping: Record<string, string> = {
   supplierManagement: 'Supplier Management',
   reportManagement: 'Report Management',
   settings: 'Settings',
+  pageNotFoundTitle: 'Page Not Found',
+  pageNotFoundMessage: 'The page you are looking for does not exist or has been moved.',
+  goBackHome: 'Go Back Home',
 }
 type Lan = typeof mapping
 export { mapping as lan }
