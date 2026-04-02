@@ -11,13 +11,26 @@ const router = createRouter({
       path: '/',
       component: () => import('@/views/MainEntry.vue'),
       children: [...home],
+      meta: {
+        requireAuth: true,
+      },
     },
     {
       path: '/:catchAll(.*)*',
       name: 'NotFound',
       component: () => import('@/views/NotFound.vue'),
+      meta: {
+        requireAuth: true,
+      },
     },
   ],
+})
+
+router.beforeEach((to, from, next) => {
+  if (to.meta.requireAuth) {
+  } else {
+    next()
+  }
 })
 
 export default router

@@ -5,6 +5,9 @@ const account: Route[] = [
     path: '/login',
     name: 'Login',
     component: () => import('@/views/UserLogin.vue'),
+    meta: {
+      requireAuth: false,
+    },
   },
 ]
 

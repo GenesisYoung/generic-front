@@ -5,6 +5,10 @@ const home: Route[] = [
     path: '/home',
     name: 'Home',
     component: () => import('@/views/HomePage.vue'),
+    meta: {
+      requireAuth: true,
+      requirePermission: 'home',
+    },
   },
 ]
 
