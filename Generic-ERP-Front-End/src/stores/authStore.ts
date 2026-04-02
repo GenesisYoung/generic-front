@@ -63,6 +63,12 @@ export const useAuthStore = defineStore('auth', () => {
     setIdentity(null)
     setToken(null)
   }
+  // Filter avaiable interfaces based on permissions
+  function filterInterfacesByPermissions(
+    interfaces: { name: string; requiredPermission: number }[],
+  ) {
+    return interfaces.filter((iface) => permissions.value.includes(iface.requiredPermission))
+  }
 
   async function fetchNewRefreshToken(token: string): Promise<string> {
     return new Promise((resolve) => {
@@ -100,5 +106,6 @@ export const useAuthStore = defineStore('auth', () => {
     setToken,
     logout,
     checkAndRefreshToken,
+    filterInterfacesByPermissions,
   }
 })

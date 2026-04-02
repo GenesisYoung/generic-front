@@ -11,7 +11,23 @@ Vue.js(Base Framework)+Vuetify(UI Framework)+TypeScript+Pinia(State Management)
 
 ### Related Files
 
-'/src/config/auth.ts' - Define enums, types, functions for authentication
-'/src/stores/authStore.ts' - Pinia store for authentication
-'/src/router/index.ts' - Router configuration for authentication
-'/src/api/auth.ts' - API configuration for authentication
+'/src/config/auth.ts' - **Define enums, types, functions for authentication**
+'/src/stores/authStore.ts' - **Pinia store for authentication**
+'/src/router/index.ts' - **Router configuration for authentication**
+'/src/api/auth.ts' - **API configuration for authentication**
+
+### Permissions
+
+```ts
+enum Permission {
+  ROOT = 1001,
+  ACCOUNTANT = 1002,
+  HR = 1003,
+  MARKETING = 1004,
+  PURCHASER = 1005,
+  SALESMAN = 1006,
+  BRAND_MANAGER = 1007,
+  DESIGNER = 1008,
+  CUSTOMER_RELATION = 1009,
+}
+```
