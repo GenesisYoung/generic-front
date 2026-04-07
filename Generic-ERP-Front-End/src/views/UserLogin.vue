@@ -1,10 +1,33 @@
 <script setup lang="ts">
 import { ref, inject } from 'vue'
+import type { APIRequestConfig } from '@/api/interface'
+import { request_api } from '@/api/api'
+import router from '@/router'
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')!
 const email = ref('')
 const password = ref('')
-function handleLogin() {}
+async function handleLogin() {
+  const loginConfig: APIRequestConfig = {
+    method: 'POST',
+    url: '/api/auth/login',
+    body: {
+      email: email.value,
+      password: password.value,
+    },
+  }
+  request_api<boolean>(loginConfig)
+    .then((response) => {
+      if (response.data) {
+        router.push('/dashboard')
+      } else {
+        console.error('Login failed: Invalid credentials')
+      }
+    })
+    .catch((error) => {
+      console.error('Login failed:', error)
+    })
+}
 </script>
 
 <template>

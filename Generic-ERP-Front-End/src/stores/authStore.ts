@@ -30,7 +30,17 @@ export const useAuthStore = defineStore('auth', () => {
   const permissions = computed(() => identity?.value?.permission || [])
   // Getters for authentication status
   const loginStatus = computed(() => identity?.value?.status || false)
-  const isAuthenticated = computed(() => loginStatus.value && token.value !== null)
+  const isAuthenticated = computed(async () => {
+    const lifetime = token.value?.expireTime
+      ? new Date(token.value.expireTime).getTime() - Date.now()
+      : 0
+    const lifetimeInDays = lifetime / 1000 / 60 / 60 / 24
+    if (lifetimeInDays <= 1) {
+      console.warn('Token is about to expire within 24 hours. Please refresh the token.')
+      await refreshTokenTimer() // Start the token refresh timer
+    }
+    return loginStatus.value && token.value !== null
+  })
   // Actions of the auth store
   /**
    * Update User's information and permissions
@@ -91,8 +101,8 @@ export const useAuthStore = defineStore('auth', () => {
       setTimeout(refreshTokenTimer, lifetime - 60 * 60 * 24 * 1000)
     }
   }
-  function refreshTokenTimer() {
-    checkAndRefreshToken()
+  async function refreshTokenTimer() {
+    await checkAndRefreshToken()
   }
   return {
     identity: readonly(identity),
