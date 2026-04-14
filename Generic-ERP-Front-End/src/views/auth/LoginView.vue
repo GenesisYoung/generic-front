@@ -18,8 +18,9 @@ async function handleLogin() {
 
   try {
     await auth.login(username.value, password.value)
-  } catch (e: any) {
-    errorMessage.value = e?.response?.data?.message ?? 'Login failed. Please try again.'
+  } catch (e: unknown) {
+    const error = e as { response?: { data?: { message?: string } } }
+    errorMessage.value = error?.response?.data?.message ?? 'Login failed. Please try again.'
   } finally {
     loading.value = false
   }
