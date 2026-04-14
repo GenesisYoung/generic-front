@@ -1,42 +1,39 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import account from './file/account'
-import home from './file/home'
-import { useAuthStore } from '@/stores/authStore'
+import { createRouter, createWebHashHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(),
   routes: [
-    ...account,
     {
-      name: 'Main Entry',
-      path: '/',
-      component: () => import('@/views/MainEntry.vue'),
-      children: [...home],
-      meta: {
-        requireAuth: true,
-      },
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/auth/LoginView.vue'),
+      meta: { requiresAuth: false },
     },
     {
-      path: '/:catchAll(.*)*',
-      name: 'NotFound',
-      component: () => import('@/views/NotFound.vue'),
-      meta: {
-        requireAuth: false,
-      },
+      path: '/',
+      name: 'home',
+      component: () => import('@/views/HomeView.vue'),
+      meta: { requiresAuth: true },
+    },
+    // catch-all
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/',
     },
   ],
 })
 
-router.beforeEach(async (to, from, next) => {
-  if (to.meta.requireAuth) {
-    const authStore = useAuthStore()
-    if (await authStore.isAuthenticated) {
-      next()
-    } else {
-      next('/login')
-    }
-  } else {
-    next()
+router.beforeEach((to) => {
+  const auth = useAuthStore()
+
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login' }
+  }
+
+  // If the user is already logged in and tries to visit /login, redirect home.
+  if (to.name === 'login' && auth.isAuthenticated) {
+    return { name: 'home' }
   }
 })
 

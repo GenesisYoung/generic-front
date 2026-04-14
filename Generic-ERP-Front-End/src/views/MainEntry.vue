@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { inject } from 'vue'
 import AppNavigation from '@/src/components/AppNavigation.vue'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
 import { onBeforeMount } from 'vue'
-import { useDevStore } from '@/stores/devStore'
+import { useDevStore } from '@/stores/dev'
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
 const dev_mode = import.meta.env.VITE_APP_DEV_MODE === 'true'
@@ -15,7 +15,6 @@ function checkAuth() {
     router.push('/login')
     return
   }
-  authStore.checkAndRefreshToken()
 }
 onBeforeMount(() => {
   if (dev_mode) {

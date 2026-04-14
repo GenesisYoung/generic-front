@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
-import { Permission, type Identity, type AuthToken, type ISODateString } from '@/src/config/auth'
-import { useAuthStore } from './authStore'
+import { Permission, type AuthToken, type ISODateString } from '@/src/config/auth'
+import { useAuthStore } from './auth'
+import type { Identity } from '@/types/auth'
 
 export const useDevStore = defineStore('dev', () => {
   // States of the dev store
@@ -11,11 +12,9 @@ export const useDevStore = defineStore('dev', () => {
    * */
   function initialUser() {
     const identity: Identity = {
-      user: {
-        name: 'Genesis Young',
-        id: 'dev-user-id',
-      },
-      permission: [
+      username: 'dev_user',
+      id: 0,
+      roles: [
         Permission.ROOT,
         Permission.ACCOUNTANT,
         Permission.HR,
@@ -26,17 +25,15 @@ export const useDevStore = defineStore('dev', () => {
         Permission.DESIGNER,
         Permission.CUSTOMER_RELATION,
       ],
-      status: true,
     }
     const token: AuthToken = {
       accessToken: 'fake-access-token',
       refreshToken: 'fake-refresh-token',
       expireTime: new Date(Date.now() + 60 * 60 * 24 * 8 * 1000).toISOString() as ISODateString,
     }
-    localStorage.setItem('identity_dev', JSON.stringify(identity))
-    localStorage.setItem('token_dev', JSON.stringify(token))
-    authStore.setIdentity(identity)
-    authStore.setToken(token)
+    authStore.identity = identity
+    authStore.accessToken = token.accessToken
+    authStore.refreshToken = token.refreshToken
   }
   return {
     devMode,
