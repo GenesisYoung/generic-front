@@ -1,0 +1,55 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.center {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+.fatted {
+  padding: 1rem;
+  margin: 1rem;
+}
+.border-rounded {
+  border-radius: 8px;
+}
+.back-light {
+  background-color: aliceblue;
+}
+.back-dark {
+  background-color: #302c2c;
+}
+.card-inline {
+  display: inline-block;
+  min-width: 80px;
+  margin: 0.75rem;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card {
+  min-width: 80px;
+  padding: 10px;
+  margin: 1rem 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(245, 241, 241, 0.1);
+}
+
+.container {
+  display: flex;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.auto-grow {
+  flex: 1 1 auto;
+}
+.btn {
+  margin: 5px;
+}

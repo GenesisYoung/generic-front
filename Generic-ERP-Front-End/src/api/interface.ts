@@ -8,7 +8,7 @@ interface APIRequestConfig {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE'
   url: string
   headers?: Record<string, string>[]
-  body?: any
+  body?: unknown
 }
 
 type ISODateString = string // ISO 8601 formatted date string

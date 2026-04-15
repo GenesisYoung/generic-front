@@ -1,4 +1,5 @@
 const mapping: Record<string, string> = {
+  currency: '$',
   title: 'Generic ERP System',
   login: 'Login',
   home: 'Home',

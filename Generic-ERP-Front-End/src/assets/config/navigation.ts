@@ -15,7 +15,7 @@ export const navigationItems: NavItem[] = [
   {
     titleKey: 'userManagement',
     icon: 'mdi-account-cog',
-    route: '/user-management',
+    route: '/manage/users',
     color: 'indigo',
   },
   {

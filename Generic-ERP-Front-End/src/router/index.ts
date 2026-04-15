@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import manage from './file/manage'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -12,11 +13,12 @@ const router = createRouter({
     },
     {
       path: '/',
+      alias: '/dashboard',
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
       meta: { requiresAuth: true },
     },
-    // catch-all
+    ...manage,
     {
       path: '/:pathMatch(.*)*',
       redirect: '/',
@@ -32,6 +34,10 @@ router.beforeEach((to) => {
 
   // If the user is already logged in and tries to visit /login, redirect home.
   if (to.name === 'login' && auth.isAuthenticated) {
+    return { name: 'home' }
+  }
+
+  if (auth.isDevmode && to.name === 'login') {
     return { name: 'home' }
   }
 })

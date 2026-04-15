@@ -3,6 +3,8 @@ import { defineStore } from 'pinia'
 import { useRouter } from 'vue-router'
 import http from '@/api/http'
 import type { Identity, TokenPair } from '@/types/auth'
+import { toISODateString } from '@/assets/config/auth'
+import type { AuthToken } from '@/assets/config/auth'
 
 export const useAuthStore = defineStore(
   'auth',
@@ -13,8 +15,7 @@ export const useAuthStore = defineStore(
     const identity = ref<Identity | null>(null)
     const accessToken = ref<string | null>(null)
     const refreshToken = ref<string | null>(null)
-    const isDevmode = ref(import.meta.env.DEV)
-    console.log('Auth store dev mode:', import.meta.env.VITE_APP_DEV_MODE)
+    const isDevmode = ref(import.meta.env.VITE_APP_DEV_MODE === 'true') && ref(import.meta.env.DEV)
 
     console.log('Auth store initialized. Dev mode:', isDevmode.value)
 
@@ -70,6 +71,22 @@ export const useAuthStore = defineStore(
       accessToken.value = null
       refreshToken.value = null
       router.push('/login')
+    }
+    const dev_user_roles = import.meta.env.VITE_APP_DEV_USER_ROLES?.split(',').map(Number)
+    const dev: Identity = {
+      username: 'dev_user',
+      id: 0,
+      roles: dev_user_roles,
+    }
+    const token: AuthToken = {
+      accessToken: 'fake-access-token',
+      refreshToken: 'fake-refresh-token',
+      expireTime: toISODateString(new Date(Date.now() + 60 * 60 * 24 * 8 * 1000)),
+    }
+    if (isDevmode.value) {
+      identity.value = dev
+      accessToken.value = token.accessToken
+      refreshToken.value = token.refreshToken
     }
 
     return {
