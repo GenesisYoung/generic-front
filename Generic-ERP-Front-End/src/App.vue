@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { inject } from 'vue'
-import AppNavigation from '@/src/components/AppNavigation.vue'
-type Lan = Record<string, string>
-const lang: Lan | undefined = inject('lan')
+import MainEntry from './views/MainEntry.vue'
+import { lan } from '@/lang/china_zh'
+import { provide } from 'vue'
+provide('lan', lan)
 </script>
 
 <template>
-  <router-view />
+  <main-entry />
 </template>
 
 <style scoped></style>

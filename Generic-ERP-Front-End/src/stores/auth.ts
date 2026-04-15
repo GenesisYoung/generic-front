@@ -13,6 +13,10 @@ export const useAuthStore = defineStore(
     const identity = ref<Identity | null>(null)
     const accessToken = ref<string | null>(null)
     const refreshToken = ref<string | null>(null)
+    const isDevmode = ref(import.meta.env.DEV)
+    console.log('Auth store dev mode:', import.meta.env.VITE_APP_DEV_MODE)
+
+    console.log('Auth store initialized. Dev mode:', isDevmode.value)
 
     // ── Getters ───────────────────────────────────────────────────────────────
     const isAuthenticated = computed(() => !!accessToken.value && !!identity.value)
@@ -73,6 +77,7 @@ export const useAuthStore = defineStore(
       accessToken,
       refreshToken,
       isAuthenticated,
+      isDevmode,
       hasRole,
       login,
       refresh,
