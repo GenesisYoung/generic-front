@@ -21,7 +21,7 @@ export const navigationItems: NavItem[] = [
   {
     titleKey: 'roleManagement',
     icon: 'mdi-account-key',
-    route: '/role-management',
+    route: '/manage/roles',
     color: 'indigo',
   },
   {

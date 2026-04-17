@@ -11,6 +11,11 @@ interface APIRequestConfig {
   body?: unknown
 }
 
+interface SelectItem {
+  title: string
+  value: string | number
+}
+
 type ISODateString = string // ISO 8601 formatted date string
 
-export type { APIResponse, APIRequestConfig, ISODateString }
+export type { APIResponse, APIRequestConfig, ISODateString, SelectItem }

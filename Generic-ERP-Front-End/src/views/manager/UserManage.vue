@@ -21,6 +21,7 @@
       <v-table class="user-table">
         <thead>
           <tr>
+            <th>#</th>
             <th>{{ lang?.userName }}</th>
             <th>{{ lang?.userEmail }}</th>
             <th>{{ lang?.userRole }}</th>
@@ -36,9 +37,12 @@
             <td colspan="5" class="center">{{ lang?.noUserFound }}</td>
           </tr>
           <tr v-for="user in filteredUsers" :key="user.id">
+            <td>{{ user.id }}</td>
             <td>{{ user.name }}</td>
             <td>{{ user.email }}</td>
-            <td>{{ user.role }}</td>
+            <td>
+              <v-select v-model="user.role" :items="roles" :disabled="true"> </v-select>
+            </td>
             <td>
               <span :class="['status-pill', user.active ? 'active' : 'inactive']">
                 {{ user.active ? lang?.active : lang?.disabled }}
@@ -67,33 +71,32 @@
 
       <form @submit.prevent="saveUser" class="user-form">
         <label>
-          Name
+          {{ lang?.userName }}
           <input v-model="formUser.name" type="text" required />
         </label>
-
         <label>
-          Email
+          {{ lang?.displayName }}
+          <input v-model="formUser.display_name" type="text" required />
+        </label>
+        <label>
+          {{ lang?.userEmail }}
           <input v-model="formUser.email" type="email" required />
         </label>
 
         <label>
-          Role
-          <select v-model="formUser.role">
-            <option v-for="role in roles" :key="role" :value="role">
-              {{ role }}
-            </option>
-          </select>
+          {{ lang?.userRole }}
+          <v-select v-model="formUser.role" :items="roles"></v-select>
         </label>
 
-        <label class="checkbox-label">
-          <input v-model="formUser.active" type="checkbox" />
-          Active account
+        <label class="checkbox-label active-checkbox-container">
+          <div class="label">{{ lang?.activeAccount }}</div>
+          <div class="check-box"><input v-model="formUser.active" type="checkbox" /></div>
         </label>
 
         <div class="form-actions">
-          <button type="button" class="ghost-button" @click="closeForm">Cancel</button>
+          <button type="button" class="ghost-button" @click="closeForm">{{ lang?.cancel }}</button>
           <button type="submit" class="primary-button">
-            {{ editingUser ? 'Save Changes' : 'Create User' }}
+            {{ editingUser ? lang?.saveChanges : lang?.createUser }}
           </button>
         </div>
       </form>
@@ -104,14 +107,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { inject } from 'vue'
+import { Permission } from '@/assets/config/auth'
+import type { SelectItem } from '@/api/interface'
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
 
 interface User {
   id: number
   name: string
+  display_name: string
   email: string
-  role: string
+  role: number
   active: boolean
 }
 
@@ -123,12 +129,21 @@ const showForm = ref(false)
 const editingUser = ref<User | null>(null)
 const formUser = ref<Omit<User, 'id'>>({
   name: '',
+  display_name: '',
   email: '',
-  role: 'User',
+  role: 1001,
   active: true,
 })
+const roles = ref<SelectItem[]>([])
 
-const roles = ['Admin', 'Manager', 'User']
+for (const p in Permission) {
+  const val = Permission[p]
+  if (typeof val === 'number') {
+    roles.value.push({ title: p, value: val })
+  }
+}
+
+roles.value.sort((a, b) => a.title.localeCompare(b.title))
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 
@@ -138,7 +153,7 @@ const filteredUsers = computed(() =>
     return (
       user.name.toLowerCase().includes(query) ||
       user.email.toLowerCase().includes(query) ||
-      user.role.toLowerCase().includes(query)
+      user.role.toString().includes(query)
     )
   }),
 )
@@ -148,16 +163,31 @@ const fetchUsers = async () => {
   errorMessage.value = ''
   try {
     //TODO: 后端接口需要改成返回 200 + { code: 0, data: [...] } 的格式，目前先兼容一下
-    // const response = await fetch(`${apiBase}/users`)
-    // if (!response.ok) {
-    //   throw new Error('Failed to load users')
-    // }
-    // const data = (await response.json()) as User[]
-    // users.value = data
     const fakeData: User[] = [
-      { id: 1, name: 'Alice', email: 'alice@example.com', role: 'Admin', active: true },
-      { id: 2, name: 'Bob', email: 'bob@example.com', role: 'Manager', active: true },
-      { id: 3, name: 'Charlie', email: 'charlie@example.com', role: 'User', active: false },
+      {
+        id: 1,
+        name: 'Alice',
+        display_name: 'Alice Johnson',
+        email: 'alice@example.com',
+        role: 1001,
+        active: true,
+      },
+      {
+        id: 2,
+        name: 'Bob',
+        display_name: 'Bob Smith',
+        email: 'bob@example.com',
+        role: 1002,
+        active: true,
+      },
+      {
+        id: 3,
+        name: 'Charlie',
+        display_name: 'Charlie Brown',
+        email: 'charlie@example.com',
+        role: 1003,
+        active: false,
+      },
     ]
     users.value = fakeData
   } catch (error) {
@@ -171,8 +201,9 @@ const openCreate = () => {
   editingUser.value = null
   formUser.value = {
     name: '',
+    display_name: '',
     email: '',
-    role: 'User',
+    role: 1001,
     active: true,
   }
   showForm.value = true
@@ -182,6 +213,7 @@ const openEdit = (user: User) => {
   editingUser.value = user
   formUser.value = {
     name: user.name,
+    display_name: user.display_name,
     email: user.email,
     role: user.role,
     active: user.active,
@@ -251,6 +283,7 @@ onMounted(fetchUsers)
 <style scoped>
 @import '@/assets/styles/main.css';
 .page-container {
+  position: relative;
   padding: 24px;
   display: grid;
   gap: 24px;
@@ -373,9 +406,25 @@ onMounted(fetchUsers)
 .drawer {
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 15px;
   padding: 24px;
-  max-width: 540px;
+  width: 480px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@media screen and (width<=480px) {
+  .drawer {
+    width: 80%;
+    height: auto;
+    border-radius: 0;
+    padding: 24px 16px;
+    overflow-y: auto;
+    border-radius: 15px;
+    top: 60%;
+  }
 }
 
 .drawer-header {
@@ -404,7 +453,6 @@ onMounted(fetchUsers)
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  background: #ffffff;
 }
 
 .checkbox-label {
@@ -412,6 +460,15 @@ onMounted(fetchUsers)
   align-items: center;
   gap: 10px;
   font-weight: 500;
+}
+
+.active-checkbox-container input[type='checkbox'] {
+  height: 100%;
+}
+.active-checkbox-container {
+  display: flex !important;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .form-actions {
