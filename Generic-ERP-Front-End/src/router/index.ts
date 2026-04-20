@@ -1,6 +1,11 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import manage from './file/manage'
+import { useTabsStore } from '@/stores/tabs'
+import type { Tab } from '@/types/interface'
+import { lan } from '@/lang/china_zh'
+type Lan = Record<string, string>
+const mapping: Lan = lan
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -28,6 +33,7 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
+  const tabs = useTabsStore()
   if (!auth.isDevmode && to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login' }
   }
@@ -40,6 +46,13 @@ router.beforeEach((to) => {
   if (auth.isDevmode && to.name === 'login') {
     return { name: 'home' }
   }
+  const newTab: Tab = {
+    id: to.fullPath,
+    title: mapping[to.name as string] || (to.name as string) || to.fullPath,
+    component: () => import('@/views' + to.path + '.vue'),
+    router: to.fullPath,
+  }
+  tabs.addTab(newTab)
 })
 
 export default router

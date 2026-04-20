@@ -49,15 +49,25 @@
               </span>
             </td>
             <td class="actions-col">
-              <button class="ghost-button btn" @click="openEdit(user)">{{ lang?.edit }}</button>
-              <button class="danger-button btn" @click="deleteUser(user)">
+              <v-btn class="mr-2" color="indigo" variant="flat" @click="openEdit(user)">
+                {{ lang?.edit }}
+              </v-btn>
+              <v-btn class="mr-2" color="red" variant="flat" @click="deleteUser(user)">
                 {{ lang?.delete }}
-              </button>
+              </v-btn>
             </td>
           </tr>
         </tbody>
       </v-table>
     </div>
+
+    <pagination-bar
+      class="mt-3"
+      v-if="filteredUsers.length > 0"
+      :current-page="currentPage"
+      :total-pages="2"
+      @update:currentPage="updatePage"
+    ></pagination-bar>
 
     <div v-if="errorMessage" class="error-banner">
       {{ errorMessage }}
@@ -66,7 +76,7 @@
     <aside v-if="showForm" class="drawer">
       <div class="drawer-header">
         <h2>{{ editingUser ? 'Edit User' : 'Create User' }}</h2>
-        <button class="icon-button" @click="closeForm">×</button>
+        <v-btn class="icon-button" @click="closeForm">×</v-btn>
       </div>
 
       <form @submit.prevent="saveUser" class="user-form">
@@ -108,7 +118,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { inject } from 'vue'
 import { Permission } from '@/assets/config/auth'
-import type { SelectItem } from '@/api/interface'
+import type { SelectItem } from '@/types/interface'
+import PaginationBar from '@/assets/components/PaginationBar.vue'
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
 
@@ -135,6 +146,7 @@ const formUser = ref<Omit<User, 'id'>>({
   active: true,
 })
 const roles = ref<SelectItem[]>([])
+const currentPage = ref(1)
 
 for (const p in Permission) {
   const val = Permission[p]
@@ -157,7 +169,10 @@ const filteredUsers = computed(() =>
     )
   }),
 )
-
+const updatePage = async (page: number) => {
+  // TODO: 实现分页功能，目前只是模拟翻页
+  currentPage.value = page
+}
 const fetchUsers = async () => {
   isLoading.value = true
   errorMessage.value = ''
@@ -406,11 +421,13 @@ onMounted(fetchUsers)
 .drawer {
   background: #fff;
   border: 1px solid #e5e7eb;
+  max-height: 450px;
+  overflow-y: auto;
   border-radius: 15px;
   padding: 24px;
   width: 480px;
   position: absolute;
-  top: 50%;
+  top: 30%;
   left: 50%;
   transform: translate(-50%, -50%);
 }

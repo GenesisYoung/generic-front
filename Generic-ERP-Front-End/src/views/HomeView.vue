@@ -4,7 +4,6 @@ import ManagerView from './home/ManagerView.vue'
 import { Permission } from '@/assets/config/auth'
 const authStore = useAuthStore() // Initialize auth store to ensure it's available throughout the app
 const roles = authStore.identity?.roles
-console.log('User roles:', roles)
 </script>
 
 <template>

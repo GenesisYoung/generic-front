@@ -78,6 +78,12 @@ const mapping: Record<string, string> = {
   permissionName: '权限名称',
   permissionDescription: '权限描述',
   noPermissionFound: '暂无权限',
+  roleList: '角色列表',
+  permissionList: '权限列表',
+  userList: '用户列表',
+  roleId: '角色ID',
+  roleValue: '角色值',
+  actions: '操作',
 }
 type Lan = typeof mapping
 export { mapping as lan }

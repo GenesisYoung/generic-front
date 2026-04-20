@@ -5,7 +5,7 @@ type Route = import('vue-router').RouteRecordRaw
 const manage: Route[] = [
   {
     path: '/manage/users',
-    name: 'Users',
+    name: 'userManagement',
     component: () => import('@/views/manager/UserManage.vue'),
     meta: {
       requireAuth: true,
@@ -14,7 +14,7 @@ const manage: Route[] = [
   },
   {
     path: '/manage/roles',
-    name: 'Roles',
+    name: 'roleManagement',
     component: () => import('@/views/manager/RoleManage.vue'),
     meta: {
       requireAuth: true,
