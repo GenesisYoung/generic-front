@@ -84,6 +84,8 @@ const mapping: Record<string, string> = {
   roleId: '角色ID',
   roleValue: '角色值',
   actions: '操作',
+  save: '保存',
+  add: '添加',
 }
 type Lan = typeof mapping
 export { mapping as lan }

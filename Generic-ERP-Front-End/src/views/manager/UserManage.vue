@@ -65,7 +65,7 @@
       class="mt-3"
       v-if="filteredUsers.length > 0"
       :current-page="currentPage"
-      :total-pages="2"
+      :total-pages="Math.ceil(filteredUsers.length / 10)"
       @update:currentPage="updatePage"
     ></pagination-bar>
 
