@@ -1,9 +1,9 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { lan } from '@/lang/china_zh'
 import { useAuthStore } from '@/stores/auth'
-import manage from './file/manage'
 import { useTabsStore } from '@/stores/tabs'
 import type { Tab } from '@/types/interface'
-import { lan } from '@/lang/china_zh'
+import { createRouter, createWebHashHistory } from 'vue-router'
+import manage from './file/manage'
 type Lan = Record<string, string>
 const mapping: Lan = lan
 
@@ -34,16 +34,13 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
   const tabs = useTabsStore()
-  if (!auth.isDevmode && to.meta.requiresAuth && !auth.isAuthenticated) {
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    console.log('Access denied. Redirecting to login.')
     return { name: 'login' }
   }
 
   // If the user is already logged in and tries to visit /login, redirect home.
   if (to.name === 'login' && auth.isAuthenticated) {
-    return { name: 'home' }
-  }
-
-  if (auth.isDevmode && to.name === 'login') {
     return { name: 'home' }
   }
   const newTab: Tab = {

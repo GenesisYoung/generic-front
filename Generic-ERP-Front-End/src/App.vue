@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import MainEntry from './views/MainEntry.vue'
 import { lan } from '@/lang/china_zh'
-import { provide } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { provide } from 'vue'
+import MainEntry from './views/MainEntry.vue'
 provide('lan', lan)
-const isLoggedIn = useAuthStore().isDevmode || useAuthStore().isAuthenticated
+const isLoggedIn = useAuthStore().isAuthenticated
+console.log('User logged in:', isLoggedIn)
 </script>
 
 <template>

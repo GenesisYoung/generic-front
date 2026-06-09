@@ -1,5 +1,5 @@
+import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
-import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 
 // We use a factory function to avoid a circular import between
 // http.ts and auth.ts (the store imports http, http imports the store).
@@ -12,7 +12,7 @@ export function registerAuthStore(
 }
 
 const http: AxiosInstance = axios.create({
-  baseURL: 'https://localhost:8443',
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
   withCredentials: true,
 })
@@ -35,7 +35,6 @@ let waitingQueue: Array<(token: string) => void> = []
 
 http.interceptors.response.use(
   (response: AxiosResponse) => response,
-
   async (error) => {
     const originalRequest = error.config
 

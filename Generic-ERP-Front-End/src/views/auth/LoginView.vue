@@ -1,7 +1,7 @@
 <!-- src/views/auth/LoginView.vue -->
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { ref } from 'vue'
 
 const auth = useAuthStore()
 
@@ -17,8 +17,10 @@ async function handleLogin() {
   errorMessage.value = ''
 
   try {
-    await auth.login(username.value, password.value)
+    const result = await auth.login(username.value, password.value)
+    console.log(result)
   } catch (e: unknown) {
+    console.error('Login error:', e)
     const error = e as { response?: { data?: { message?: string } } }
     errorMessage.value = error?.response?.data?.message ?? 'Login failed. Please try again.'
   } finally {

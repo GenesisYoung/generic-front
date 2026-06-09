@@ -11,7 +11,8 @@ export interface TokenPair {
 export interface Identity {
   id: number
   username: string
-  roles: number[]
+  email: string
+  displayName: string
 }
 
 export interface AuthState {
