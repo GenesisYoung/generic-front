@@ -13,7 +13,7 @@ export const useAuthStore = defineStore(
     const identity = ref<Identity | null>(null)
     const accessToken = ref<string | null>(null)
     const refreshToken = ref<string | null>(null)
-    const isDevmode = ref(import.meta.env.VITE_APP_DEV_MODE === 'true') && ref(import.meta.env.DEV)
+    const isDevmode = ref(import.meta.env.VITE_APP_DEV_MODE === 'true')
 
     console.log('Auth store initialized. Dev mode:', isDevmode.value)
 

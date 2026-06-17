@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ManagerView from './home/ManagerView.vue'
+import ManagerView from './home/ManagerView.vue';
 </script>
 
 <template>

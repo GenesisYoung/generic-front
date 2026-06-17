@@ -29,7 +29,7 @@ npm run dev        # dev server at http://localhost:5173
 Copy `.env.example` to `.env.local` and set at minimum:
 
 ```env
-VITE_API_BASE_URL=https://localhost:8443   # backend API origin
+VITE_BASE_URL=https://localhost:8443   # backend API origin
 ```
 
 ### Dev mode (bypass login)

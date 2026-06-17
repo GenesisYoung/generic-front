@@ -6,7 +6,7 @@ const manage: Route[] = [
   {
     path: '/manage/users',
     name: 'userManagement',
-    component: () => import('@/views/manager/UserManage.vue'),
+    component: () => import('@/views/manage/UserManage.vue'),
     meta: {
       requireAuth: true,
       permission: Permission.ROOT,
@@ -15,7 +15,7 @@ const manage: Route[] = [
   {
     path: '/manage/roles',
     name: 'roleManagement',
-    component: () => import('@/views/manager/RoleManage.vue'),
+    component: () => import('@/views/manage/RoleManage.vue'),
     redirect: '/manage/roles/list',
     meta: {
       requireAuth: true,
@@ -25,7 +25,7 @@ const manage: Route[] = [
       {
         path: 'list',
         name: 'roleList',
-        component: () => import('@/views/manager/RoleList.vue'),
+        component: () => import('@/views/manage/RoleList.vue'),
         meta: {
           requireAuth: true,
           permission: Permission.ROOT,
@@ -34,7 +34,7 @@ const manage: Route[] = [
       {
         path: 'distribute',
         name: 'roleDistribute',
-        component: () => import('@/views/manager/RoleDistribute.vue'),
+        component: () => import('@/views/manage/RoleDistribute.vue'),
         meta: {
           requireAuth: true,
           permission: Permission.ROOT,

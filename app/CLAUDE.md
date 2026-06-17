@@ -25,7 +25,7 @@ To run a single test file: `npx vitest run src/__tests__/App.spec.ts`
 - Strict TypeScript with `noUncheckedIndexedAccess` — index access returns `T | undefined`
 - Linting is dual-layer: Oxlint (fast, Rust) runs first, then ESLint for Vue/TS rules
 
-**Environment:** Backend API base URL is `VITE_API_BASE_URL` (defaults to `http://localhost:3000`). All Vite env vars must be prefixed `VITE_` to be exposed to the client.
+**Environment:** Backend API base URL is `VITE_BASE_URL` (defaults to `http://localhost:3000`). All Vite env vars must be prefixed `VITE_` to be exposed to the client.
 
 **Structure:**
 - `src/router/` — Vue Router route definitions

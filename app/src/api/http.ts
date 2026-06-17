@@ -12,7 +12,7 @@ export function registerAuthStore(
 }
 
 const http: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_BASE_URL,
   timeout: 10000,
   withCredentials: true,
 })
@@ -21,7 +21,9 @@ const http: AxiosInstance = axios.create({
 // Runs before EVERY request. Attaches the access token if it exists.
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore()
-  if (store?.accessToken) {
+  if("/auth/refresh/access"===config.url&&store?.refreshToken){
+    config.headers.Authorization = `Bearer ${store.refreshToken}`
+  }else if (store?.accessToken) {
     config.headers.Authorization = `Bearer ${store.accessToken}`
   }
   return config
@@ -34,12 +36,14 @@ let isRefreshing = false
 let waitingQueue: Array<(token: string) => void> = []
 
 http.interceptors.response.use(
-  (response: AxiosResponse) => response,
-  async (error) => {
-    const originalRequest = error.config
-
+  (resp)=>{
+    return resp
+  }
+  ,
+  async (error:AxiosResponse) => {
+    const originalRequest = error.request
     // Only handle 401 errors, and only retry once (avoid infinite loop).
-    if (error.response?.status !== 401 || originalRequest._retried) {
+    if (error?.status !== 403 || originalRequest._retried) {
       return Promise.reject(error)
     }
 

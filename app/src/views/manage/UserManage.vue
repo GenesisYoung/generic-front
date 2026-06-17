@@ -115,11 +115,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { inject } from 'vue'
+import PaginationBar from '@/assets/components/PaginationBar.vue'
 import { Permission } from '@/assets/config/auth'
 import type { SelectItem } from '@/types/interface'
-import PaginationBar from '@/assets/components/PaginationBar.vue'
+import { computed, inject, onMounted, ref } from 'vue'
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
 
@@ -157,7 +156,7 @@ for (const p in Permission) {
 
 roles.value.sort((a, b) => a.title.localeCompare(b.title))
 
-const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+const apiBase = (import.meta.env.VITE_BASE_URL ?? '').replace(/\/$/, '')
 
 const filteredUsers = computed(() =>
   users.value.filter((user) => {

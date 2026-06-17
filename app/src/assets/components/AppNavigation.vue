@@ -12,9 +12,20 @@
 </template>
 
 <script setup lang="ts">
-import { inject } from 'vue'
-import { navigationItems } from '../config/navigation'
+import http from '@/api/http';
+import { useAuthStore } from '@/stores/auth';
+import { inject, onMounted } from 'vue';
+import { navigationItems } from '../config/navigation';
 
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
+async function fetchNavMenu(){
+  const auth=useAuthStore()
+  const sideMenu=await http.get(`/users/fetch/sidebar/menu?id=${auth.identity?.id}`)
+  const data=sideMenu
+  console.log(data)
+}
+onMounted(async ()=>{
+  await fetchNavMenu()
+})
 </script>
