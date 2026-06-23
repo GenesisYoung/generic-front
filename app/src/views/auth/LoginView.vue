@@ -17,8 +17,7 @@ async function handleLogin() {
   errorMessage.value = ''
 
   try {
-    const result = await auth.login(username.value, password.value)
-    console.log(result)
+    await auth.login(username.value, password.value)
   } catch (e: unknown) {
     console.error('Login error:', e)
     const error = e as { response?: { data?: { message?: string } } }

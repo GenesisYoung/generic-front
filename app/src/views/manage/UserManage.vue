@@ -16,7 +16,6 @@
         class="search-input"
       />
     </div>
-
     <div class="table-wrapper">
       <v-table class="user-table">
         <thead>
@@ -31,17 +30,19 @@
         </thead>
         <tbody>
           <tr v-if="isLoading">
-            <td colspan="5" class="center">{{ lang?.loading }}</td>
+            <td colspan="6" class="center">{{ lang?.loading }}</td>
           </tr>
           <tr v-if="!isLoading && filteredUsers.length === 0">
-            <td colspan="5" class="center">{{ lang?.noUserFound }}</td>
+            <td colspan="6" class="center">{{ lang?.noUserFound }}</td>
           </tr>
-          <tr v-for="user in filteredUsers" :key="user.id">
+          <tr v-for="user in paginatedUsers" :key="user.id">
             <td>{{ user.id }}</td>
             <td>{{ user.name }}</td>
             <td>{{ user.email }}</td>
             <td>
-              <v-select v-model="user.role" :items="roles" :disabled="true"> </v-select>
+              <div class="role-badges">
+                <span class="role-chip">{{ user.roleStr || lang?.noRoles || 'No roles' }}</span>
+              </div>
             </td>
             <td>
               <span :class="['status-pill', user.active ? 'active' : 'inactive']">
@@ -59,13 +60,20 @@
           </tr>
         </tbody>
       </v-table>
+      <div class="table-footer">
+        <div>
+          {{ lang?.showing || 'Showing' }} {{ paginatedUsers.length }} {{ lang?.of || 'of' }}
+          {{ filteredUsers.length }} {{ lang?.users || 'users' }}
+        </div>
+        <div>{{ lang?.page || 'Page' }} {{ currentPage + 1 }} / {{ pageCount }}</div>
+      </div>
     </div>
 
     <pagination-bar
       class="mt-3"
       v-if="filteredUsers.length > 0"
       :current-page="currentPage"
-      :total-pages="Math.ceil(filteredUsers.length / 10)"
+      :total-pages="pageCount"
       @update:currentPage="updatePage"
     ></pagination-bar>
 
@@ -73,52 +81,62 @@
       {{ errorMessage }}
     </div>
 
-    <aside v-if="showForm" class="drawer">
-      <div class="drawer-header">
-        <h2>{{ editingUser ? 'Edit User' : 'Create User' }}</h2>
-        <v-btn class="icon-button" @click="closeForm">×</v-btn>
-      </div>
-
-      <form @submit.prevent="saveUser" class="user-form">
-        <label>
-          {{ lang?.userName }}
-          <input v-model="formUser.name" type="text" required />
-        </label>
-        <label>
-          {{ lang?.displayName }}
-          <input v-model="formUser.display_name" type="text" required />
-        </label>
-        <label>
-          {{ lang?.userEmail }}
-          <input v-model="formUser.email" type="email" required />
-        </label>
-
-        <label>
-          {{ lang?.userRole }}
-          <v-select v-model="formUser.role" :items="roles"></v-select>
-        </label>
-
-        <label class="checkbox-label active-checkbox-container">
-          <div class="label">{{ lang?.activeAccount }}</div>
-          <div class="check-box"><input v-model="formUser.active" type="checkbox" /></div>
-        </label>
-
-        <div class="form-actions">
-          <button type="button" class="ghost-button" @click="closeForm">{{ lang?.cancel }}</button>
-          <button type="submit" class="primary-button">
-            {{ editingUser ? lang?.saveChanges : lang?.createUser }}
-          </button>
+    <div v-if="showForm" class="drawer-backdrop">
+      <aside class="drawer">
+        <div class="drawer-header">
+          <h2>{{ editingUser ? 'Edit User' : 'Create User' }}</h2>
+          <v-btn class="icon-button" @click="closeForm">×</v-btn>
         </div>
-      </form>
-    </aside>
+
+        <form @submit.prevent="saveUser" class="user-form">
+          <label>
+            {{ lang?.userName }}
+            <input v-model="formUser.name" type="text" required />
+          </label>
+          <label>
+            {{ lang?.displayName }}
+            <input v-model="formUser.display_name" type="text" required />
+          </label>
+          <label>
+            {{ lang?.userEmail }}
+            <input v-model="formUser.email" type="email" required />
+          </label>
+
+          <label>
+            {{ lang?.userRole }}
+            <v-select
+              item-value="ROOT"
+              v-model="formUser.roleStr"
+              :items="roles"
+              multiple
+            ></v-select>
+          </label>
+
+          <label class="checkbox-label active-checkbox-container">
+            <div class="label">{{ lang?.activeAccount }}</div>
+            <div class="check-box"><input v-model="formUser.active" type="checkbox" /></div>
+          </label>
+
+          <div class="form-actions">
+            <button type="button" class="ghost-button" @click="closeForm">
+              {{ lang?.cancel }}
+            </button>
+            <button type="submit" class="primary-button">
+              {{ editingUser ? lang?.saveChanges : lang?.createUser }}
+            </button>
+          </div>
+        </form>
+      </aside>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import { Permission } from '@/assets/config/auth'
 import type { SelectItem } from '@/types/interface'
-import { computed, inject, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
 
@@ -127,7 +145,8 @@ interface User {
   name: string
   display_name: string
   email: string
-  role: number
+  roles: Array<string>
+  roleStr: string
   active: boolean
 }
 
@@ -141,11 +160,13 @@ const formUser = ref<Omit<User, 'id'>>({
   name: '',
   display_name: '',
   email: '',
-  role: 1001,
+  roles: [],
+  roleStr: 'ROOT',
   active: true,
 })
 const roles = ref<SelectItem[]>([])
-const currentPage = ref(1)
+const currentPage = ref(0)
+const pageSize = ref(10)
 
 for (const p in Permission) {
   const val = Permission[p]
@@ -164,46 +185,40 @@ const filteredUsers = computed(() =>
     return (
       user.name.toLowerCase().includes(query) ||
       user.email.toLowerCase().includes(query) ||
-      user.role.toString().includes(query)
+      user.roleStr.toString().includes(query)
     )
   }),
 )
+// const activeCount = computed(() => users.value.filter((user) => user.active).length)
+// const inactiveCount = computed(() => users.value.length - activeCount.value)
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil(filteredUsers.value.length / pageSize.value)),
+)
+const paginatedUsers = computed(() => {
+  const start = currentPage.value * pageSize.value
+  return filteredUsers.value.slice(start, start + pageSize.value)
+})
+watch(filteredUsers, () => {
+  if (currentPage.value > pageCount.value - 1) {
+    currentPage.value = Math.max(0, pageCount.value - 1)
+  }
+})
 const updatePage = async (page: number) => {
-  // TODO: 实现分页功能，目前只是模拟翻页
   currentPage.value = page
 }
 const fetchUsers = async () => {
   isLoading.value = true
   errorMessage.value = ''
   try {
-    //TODO: 后端接口需要改成返回 200 + { code: 0, data: [...] } 的格式，目前先兼容一下
-    const fakeData: User[] = [
-      {
-        id: 1,
-        name: 'Alice',
-        display_name: 'Alice Johnson',
-        email: 'alice@example.com',
-        role: 1001,
-        active: true,
-      },
-      {
-        id: 2,
-        name: 'Bob',
-        display_name: 'Bob Smith',
-        email: 'bob@example.com',
-        role: 1002,
-        active: true,
-      },
-      {
-        id: 3,
-        name: 'Charlie',
-        display_name: 'Charlie Brown',
-        email: 'charlie@example.com',
-        role: 1003,
-        active: false,
-      },
-    ]
-    users.value = fakeData
+    const resp = await http.get(`/root/user/fetch?page=${currentPage.value}&size=${pageSize.value}`)
+    const userList: User[] = resp.data.content
+    userList.forEach((e) => {
+      e.roleStr = ''
+      e.roles.forEach((p) => {
+        if (p != undefined) e.roleStr += Permission[Number.parseInt(p)] + ' '
+      })
+    })
+    users.value = userList
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'An unknown error occurred'
   } finally {
@@ -217,7 +232,8 @@ const openCreate = () => {
     name: '',
     display_name: '',
     email: '',
-    role: 1001,
+    roles: ['1001'],
+    roleStr: 'ROOT',
     active: true,
   }
   showForm.value = true
@@ -229,7 +245,8 @@ const openEdit = (user: User) => {
     name: user.name,
     display_name: user.display_name,
     email: user.email,
-    role: user.role,
+    roles: user.roles,
+    roleStr: 'ROOT',
     active: user.active,
   }
   showForm.value = true
@@ -244,8 +261,9 @@ const saveUser = async () => {
   errorMessage.value = ''
   const payload = {
     name: formUser.value.name.trim(),
+    display_name: formUser.value.display_name.trim(),
     email: formUser.value.email.trim(),
-    role: formUser.value.role,
+    roles: formUser.value.roles,
     active: formUser.value.active,
   }
 
@@ -301,6 +319,8 @@ onMounted(fetchUsers)
   padding: 24px;
   display: grid;
   gap: 24px;
+  max-width: 1180px;
+  margin: 0 auto;
 }
 
 .page-header {
@@ -308,6 +328,7 @@ onMounted(fetchUsers)
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .toolbar {
@@ -317,15 +338,45 @@ onMounted(fetchUsers)
 
 .search-input {
   min-width: 280px;
+  max-width: 360px;
+  width: 100%;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.summary-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+}
+
+.summary-card-title {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.summary-card strong {
+  font-size: 1.4rem;
 }
 
 .table-wrapper {
   overflow-x: auto;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
 }
 
 .user-table {
@@ -343,11 +394,33 @@ onMounted(fetchUsers)
 
 .user-table th {
   background: #14406c;
+  color: #ffffff;
   font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.user-table tbody tr:hover {
+  background: #f8fafc;
 }
 
 .actions-col {
   width: 180px;
+}
+
+.role-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
 }
 
 .center {
@@ -372,6 +445,15 @@ onMounted(fetchUsers)
 .status-pill.inactive {
   background: #fee2e2;
   color: #991b1b;
+}
+
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  color: #4b5563;
+  font-size: 0.95rem;
 }
 
 .primary-button,
@@ -417,29 +499,32 @@ onMounted(fetchUsers)
   color: #b91c1c;
 }
 
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.32);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 20;
+}
+
 .drawer {
   background: #fff;
   border: 1px solid #e5e7eb;
-  max-height: 450px;
+  max-height: min(90vh, 650px);
   overflow-y: auto;
-  border-radius: 15px;
-  padding: 24px;
-  width: 480px;
-  position: absolute;
-  top: 30%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  border-radius: 18px;
+  padding: 28px;
+  width: min(520px, 100%);
+  position: relative;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
 }
 
-@media screen and (width<=480px) {
+@media screen and (max-width: 680px) {
   .drawer {
-    width: 80%;
-    height: auto;
-    border-radius: 0;
-    padding: 24px 16px;
-    overflow-y: auto;
-    border-radius: 15px;
-    top: 60%;
+    width: 100%;
+    padding: 20px;
   }
 }
 

@@ -15,8 +15,6 @@ export const useAuthStore = defineStore(
     const refreshToken = ref<string | null>(null)
     const isDevmode = ref(import.meta.env.VITE_APP_DEV_MODE === 'true')
 
-    console.log('Auth store initialized. Dev mode:', isDevmode.value)
-
     // ── Getters ───────────────────────────────────────────────────────────────
     const isAuthenticated = computed(() => !!accessToken.value && !!identity.value)
 
@@ -37,7 +35,6 @@ export const useAuthStore = defineStore(
       if (response.status !== 200) {
         throw new Error('Login failed')
       }
-      console.log(response)
       accessToken.value = response.data.object.tokens.accessToken
       refreshToken.value = response.data.object.tokens.refreshToken
       identity.value = response.data.object.user
@@ -50,9 +47,9 @@ export const useAuthStore = defineStore(
      * Returns the new access token so the interceptor can retry the request.
      */
     async function refresh(): Promise<string> {
-      const response = await http.post<{ object: { accessToken: string } }>('/auth/refresh/access')
-      accessToken.value = response.data.object.accessToken
-      return response.data.object.accessToken
+      const response = await http.post<{ object: string }>('/auth/refresh/access')
+      accessToken.value = response.data.object
+      return accessToken.value
     }
 
     /**

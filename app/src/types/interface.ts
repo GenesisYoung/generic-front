@@ -15,7 +15,7 @@ interface APIRequestConfig {
 // Define a structure for items that can be selected in a dropdown or similar UI component
 interface SelectItem {
   title: string
-  value: string | number
+  value: number | string
 }
 
 interface Tab {
@@ -48,11 +48,11 @@ interface PaginationResponse<T> {
 }
 
 export type {
-  APIResponse,
   APIRequestConfig,
+  APIResponse,
   ISODateString,
-  SelectItem,
-  Tab,
   PaginationRequest,
   PaginationResponse,
+  SelectItem,
+  Tab,
 }
