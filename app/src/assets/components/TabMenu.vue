@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { useTabsStore } from '@/stores/tabs'
-import { mdiClose } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 const tabsStore = useTabsStore()
 const { tabs } = storeToRefs(tabsStore)
@@ -20,7 +19,7 @@ const { tabs } = storeToRefs(tabsStore)
             {{ tab.title }}
             <v-btn
               density="comfortable"
-              :icon="mdiClose"
+              icon="mdi-close"
               variant="plain"
               @click.stop="tabsStore.removeTab(tab.id)"
             />

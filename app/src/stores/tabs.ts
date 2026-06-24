@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
-import type { Tab } from '@/types/interface'
 import router from '@/router'
+import type { Tab } from '@/types/interface'
+import { defineStore } from 'pinia'
 
 export const useTabsStore = defineStore('tabs', {
   state: () => ({
