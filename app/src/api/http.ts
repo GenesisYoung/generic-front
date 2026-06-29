@@ -1,6 +1,12 @@
 import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
 
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    _retried?: boolean
+  }
+}
+
 // We use a factory function to avoid a circular import between
 // http.ts and auth.ts (the store imports http, http imports the store).
 let getAuthStore: () => ReturnType<typeof import('@/stores/auth').useAuthStore> | null = () => null
@@ -40,7 +46,7 @@ http.interceptors.response.use(
     return resp
   },
   async (error: AxiosResponse) => {
-    const originalRequest = error.request
+    const originalRequest = error.config
     // Only handle 401 errors, and only retry once (avoid infinite loop).
     if (error?.status !== 403 || originalRequest._retried) {
       return Promise.reject(error)

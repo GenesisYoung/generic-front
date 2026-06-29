@@ -8,41 +8,40 @@
       <button class="primary-button" @click="openCreate">{{ lang?.addUser }}</button>
     </header>
 
-    <div class="toolbar">
-      <input
-        v-model="searchTerm"
-        type="search"
-        :placeholder="lang?.searchUsers"
-        class="search-input"
-      />
-    </div>
     <div class="table-wrapper">
       <v-table class="user-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>{{ lang?.userName }}</th>
-            <th>{{ lang?.userEmail }}</th>
-            <th>{{ lang?.userRole }}</th>
-            <th>{{ lang?.userStatus }}</th>
-            <th class="actions-col">{{ lang?.userActions }}</th>
+            <th style="width: 5%">#</th>
+            <th style="width: 10%">{{ lang?.userName }}</th>
+            <th style="width: 15% !important">{{ lang?.userEmail }}</th>
+            <th style="width: 10%">{{ lang?.displayName }}</th>
+            <th style="width: 20%">{{ lang?.userRole }}</th>
+            <th style="width: 10%">{{ lang?.userStatus }}</th>
+            <th style="width: 20%" class="actions-col">{{ lang?.userActions }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="isLoading">
             <td colspan="6" class="center">{{ lang?.loading }}</td>
           </tr>
-          <tr v-if="!isLoading && filteredUsers.length === 0">
+          <tr v-if="!isLoading && users.length === 0">
             <td colspan="6" class="center">{{ lang?.noUserFound }}</td>
           </tr>
-          <tr v-for="user in paginatedUsers" :key="user.id">
-            <td>{{ user.id }}</td>
-            <td>{{ user.name }}</td>
-            <td>{{ user.email }}</td>
+          <tr v-for="user in users" :key="user.id">
+            <td :title="user.id.toString()">{{ user.id }}</td>
+            <td :title="user.name">{{ user.name }}</td>
+            <td :title="user.email">{{ user.email }}</td>
+            <td :title="user.displayName">{{ user.displayName }}</td>
             <td>
-              <div class="role-badges">
-                <span class="role-chip">{{ user.roleStr || lang?.noRoles || 'No roles' }}</span>
-              </div>
+              <v-select
+                v-model="user.roles"
+                :items="roles"
+                item-title="title"
+                item-value="value"
+                multiple
+                disabled
+              ></v-select>
             </td>
             <td>
               <span :class="['status-pill', user.active ? 'active' : 'inactive']">
@@ -60,18 +59,18 @@
           </tr>
         </tbody>
       </v-table>
-      <div class="table-footer">
+      <!-- <div class="table-footer">
         <div>
-          {{ lang?.showing || 'Showing' }} {{ paginatedUsers.length }} {{ lang?.of || 'of' }}
-          {{ filteredUsers.length }} {{ lang?.users || 'users' }}
+          {{ lang?.showing || 'Showing' }} {{ users.length }} {{ lang?.of || 'of' }}
+          {{ totalElements }} {{ lang?.users || 'users' }}
         </div>
         <div>{{ lang?.page || 'Page' }} {{ currentPage + 1 }} / {{ pageCount }}</div>
-      </div>
+      </div> -->
     </div>
 
     <pagination-bar
       class="mt-3"
-      v-if="filteredUsers.length > 0"
+      v-if="users.length > 0"
       :current-page="currentPage"
       :total-pages="pageCount"
       @update:currentPage="updatePage"
@@ -89,13 +88,14 @@
         </div>
 
         <form @submit.prevent="saveUser" class="user-form">
+          <input type="hidden" name="id" v-model="formUser.id" />
           <label>
             {{ lang?.userName }}
             <input v-model="formUser.name" type="text" required />
           </label>
           <label>
             {{ lang?.displayName }}
-            <input v-model="formUser.display_name" type="text" required />
+            <input v-model="formUser.displayName" type="text" required />
           </label>
           <label>
             {{ lang?.userEmail }}
@@ -105,9 +105,10 @@
           <label>
             {{ lang?.userRole }}
             <v-select
-              item-value="ROOT"
-              v-model="formUser.roleStr"
+              v-model="formUser.roles"
               :items="roles"
+              item-title="title"
+              item-value="value"
               multiple
             ></v-select>
           </label>
@@ -136,89 +137,77 @@ import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import { Permission } from '@/assets/config/auth'
 import type { SelectItem } from '@/types/interface'
-import { computed, inject, onMounted, ref, watch } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
 
 interface User {
   id: number
   name: string
-  display_name: string
+  displayName: string
   email: string
-  roles: Array<string>
+  roles: Array<number> // ✅ number, not string
   roleStr: string
   active: boolean
 }
 
 const users = ref<User[]>([])
-const searchTerm = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
 const showForm = ref(false)
 const editingUser = ref<User | null>(null)
-const formUser = ref<Omit<User, 'id'>>({
+const formUser = ref<User>({
+  id: 0,
   name: '',
-  display_name: '',
+  displayName: '',
   email: '',
   roles: [],
   roleStr: 'ROOT',
   active: true,
 })
 const roles = ref<SelectItem[]>([])
-const currentPage = ref(0)
-const pageSize = ref(10)
-
-for (const p in Permission) {
-  const val = Permission[p]
-  if (typeof val === 'number') {
-    roles.value.push({ title: p, value: val })
+{
+  const options: SelectItem[] = []
+  for (const p in Permission) {
+    const val = Permission[p]
+    if (typeof val === 'number') {
+      options.push({ title: p, value: val })
+    }
   }
+  roles.value = options
 }
+const currentPage = ref(1)
+const pageSize = ref(5)
 
 roles.value.sort((a, b) => a.title.localeCompare(b.title))
 
 const apiBase = (import.meta.env.VITE_BASE_URL ?? '').replace(/\/$/, '')
 
-const filteredUsers = computed(() =>
-  users.value.filter((user) => {
-    const query = searchTerm.value.toLowerCase()
-    return (
-      user.name.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query) ||
-      user.roleStr.toString().includes(query)
-    )
-  }),
-)
+const totalElements = ref(0)
 // const activeCount = computed(() => users.value.filter((user) => user.active).length)
 // const inactiveCount = computed(() => users.value.length - activeCount.value)
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil(filteredUsers.value.length / pageSize.value)),
-)
-const paginatedUsers = computed(() => {
-  const start = currentPage.value * pageSize.value
-  return filteredUsers.value.slice(start, start + pageSize.value)
-})
-watch(filteredUsers, () => {
-  if (currentPage.value > pageCount.value - 1) {
-    currentPage.value = Math.max(0, pageCount.value - 1)
-  }
-})
+const pageCount = computed(() => Math.max(1, Math.ceil(totalElements.value / pageSize.value)))
 const updatePage = async (page: number) => {
   currentPage.value = page
+  await fetchUsers()
 }
 const fetchUsers = async () => {
   isLoading.value = true
   errorMessage.value = ''
   try {
-    const resp = await http.get(`/root/user/fetch?page=${currentPage.value}&size=${pageSize.value}`)
+    const resp = await http.get(
+      `/root/user/fetch?page=${currentPage.value - 1}&size=${pageSize.value}`,
+    )
     const userList: User[] = resp.data.content
     userList.forEach((e) => {
-      e.roleStr = ''
-      e.roles.forEach((p) => {
-        if (p != undefined) e.roleStr += Permission[Number.parseInt(p)] + ' '
-      })
+      e.roles = e.roles.map((r) => Number(r)) // ✅ ensure numbers
+      e.roleStr = e.roles
+        .map((p) => Permission[p])
+        .filter(Boolean)
+        .join(' ')
     })
     users.value = userList
+    totalElements.value = resp.data.totalElements
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'An unknown error occurred'
   } finally {
@@ -229,24 +218,28 @@ const fetchUsers = async () => {
 const openCreate = () => {
   editingUser.value = null
   formUser.value = {
+    id: 0,
     name: '',
-    display_name: '',
+    displayName: '',
     email: '',
-    roles: ['1001'],
+    roles: [1001],
     roleStr: 'ROOT',
     active: true,
   }
   showForm.value = true
 }
-
 const openEdit = (user: User) => {
   editingUser.value = user
   formUser.value = {
+    id: user.id,
     name: user.name,
-    display_name: user.display_name,
+    displayName: user.displayName,
     email: user.email,
-    roles: user.roles,
-    roleStr: 'ROOT',
+    roles: [...user.roles], // already numbers
+    roleStr: user.roles
+      .map((p) => Permission[p])
+      .filter(Boolean)
+      .join(','),
     active: user.active,
   }
   showForm.value = true
@@ -261,11 +254,12 @@ const saveUser = async () => {
   errorMessage.value = ''
   const payload = {
     name: formUser.value.name.trim(),
-    display_name: formUser.value.display_name.trim(),
+    displayName: formUser.value.displayName.trim(),
     email: formUser.value.email.trim(),
     roles: formUser.value.roles,
     active: formUser.value.active,
   }
+  console.log('payload==>', payload)
 
   if (!payload.name || !payload.email) {
     errorMessage.value = 'Name and email are required'
@@ -273,7 +267,9 @@ const saveUser = async () => {
   }
 
   try {
-    const url = editingUser.value ? `${apiBase}/users/${editingUser.value.id}` : `${apiBase}/users`
+    const url = editingUser.value
+      ? `${apiBase}/root/users/${editingUser.value.id}`
+      : `${apiBase}/root/users/0`
     const method = editingUser.value ? 'PUT' : 'POST'
     const response = await fetch(url, {
       method,
@@ -309,7 +305,9 @@ const deleteUser = async (user: User) => {
   }
 }
 
-onMounted(fetchUsers)
+onMounted(async () => {
+  await fetchUsers()
+})
 </script>
 
 <style scoped>
@@ -383,6 +381,25 @@ onMounted(fetchUsers)
   width: 100%;
   border-collapse: collapse;
   min-width: 640px;
+  table-layout: fixed;
+}
+
+.user-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* Rule 2: stop the text from wrapping/expanding */
+}
+
+.user-table :deep(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.user-table :deep(td) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0; /* helps fixed layout honor the % strictly */
 }
 
 .user-table th,
@@ -400,7 +417,7 @@ onMounted(fetchUsers)
 }
 
 .user-table tbody tr:hover {
-  background: #f8fafc;
+  background: #065f46;
 }
 
 .actions-col {
