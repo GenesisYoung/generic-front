@@ -27,6 +27,7 @@ const http: AxiosInstance = axios.create({
 // Runs before EVERY request. Attaches the access token if it exists.
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore()
+  console.log('enter request interceptor...')
   if ('/auth/refresh/access' === config.url && store?.refreshToken) {
     config.headers.Authorization = `Bearer ${store.refreshToken}`
   } else if (store?.accessToken) {
@@ -75,7 +76,6 @@ http.interceptors.response.use(
 
     try {
       const newAccessToken = await store.refresh()
-      console.log('access token-->', newAccessToken)
       // Retry all queued requests with the new token.
       waitingQueue.forEach((cb) => cb(newAccessToken))
       waitingQueue = []

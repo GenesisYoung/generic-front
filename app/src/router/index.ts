@@ -46,7 +46,7 @@ router.beforeEach((to) => {
   const newTab: Tab = {
     id: to.fullPath,
     title: mapping[to.name as string] || (to.name as string) || to.fullPath,
-    component: () => import('@/views' + to.path + '.vue'),
+    component: () => import(`@/views/${to.path}.vue`),
     router: to.fullPath,
   }
   tabs.addTab(newTab)

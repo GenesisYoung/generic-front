@@ -253,13 +253,13 @@ const closeForm = () => {
 const saveUser = async () => {
   errorMessage.value = ''
   const payload = {
+    id: formUser.value.id,
     name: formUser.value.name.trim(),
     displayName: formUser.value.displayName.trim(),
     email: formUser.value.email.trim(),
     roles: formUser.value.roles,
     active: formUser.value.active,
   }
-  console.log('payload==>', payload)
 
   if (!payload.name || !payload.email) {
     errorMessage.value = 'Name and email are required'
@@ -267,16 +267,12 @@ const saveUser = async () => {
   }
 
   try {
-    const url = editingUser.value
-      ? `${apiBase}/root/users/${editingUser.value.id}`
-      : `${apiBase}/root/users/0`
-    const method = editingUser.value ? 'PUT' : 'POST'
-    const response = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    if (!response.ok) {
+    const url = `${apiBase}/root/users`
+    const response = editingUser.value
+      ? await http.put(url, payload)
+      : await http.post(url, payload)
+
+    if (!response.data) {
       throw new Error('Save failed')
     }
     await fetchUsers()
@@ -285,7 +281,6 @@ const saveUser = async () => {
     errorMessage.value = error instanceof Error ? error.message : 'An unknown error occurred'
   }
 }
-
 const deleteUser = async (user: User) => {
   const confirmed = window.confirm(`Delete user ${user.name}?`)
   if (!confirmed) {
@@ -293,10 +288,9 @@ const deleteUser = async (user: User) => {
   }
 
   try {
-    const response = await fetch(`${apiBase}/users/${user.id}`, {
-      method: 'DELETE',
-    })
-    if (!response.ok) {
+    const response = await http.delete(`${apiBase}/users/${user.id}`)
+    console.log('data is ' + response.data)
+    if (!response.data) {
       throw new Error('Delete failed')
     }
     users.value = users.value.filter((u) => u.id !== user.id)
