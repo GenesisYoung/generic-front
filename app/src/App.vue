@@ -5,7 +5,6 @@ import { provide } from 'vue'
 import MainEntry from './views/MainEntry.vue'
 provide('lan', lan)
 const isLoggedIn = useAuthStore().isAuthenticated
-console.log('User logged in:', isLoggedIn)
 </script>
 
 <template>

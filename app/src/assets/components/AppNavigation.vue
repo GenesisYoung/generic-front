@@ -40,6 +40,5 @@ onMounted(async () => {
   const start = Date.now()
   await fetchNavMenu()
   const end = Date.now()
-  console.log(`Elapse:${(end - start) / 1000}s`)
 })
 </script>

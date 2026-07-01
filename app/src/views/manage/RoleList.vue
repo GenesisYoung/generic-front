@@ -78,9 +78,8 @@
 </template>
 
 <script setup lang="ts">
-import { inject } from 'vue'
-import { ref } from 'vue'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
+import { inject, ref } from 'vue'
 type Lan = Record<string, string>
 const lang = inject<Lan>('lan')
 const roles = ref<Role[]>([])
@@ -97,45 +96,38 @@ type Role = {
 }
 const isEditMode = ref(false)
 
-initRoles()
+// initRoles()
 
 function saveRole(id: number) {
   if (isEditMode.value) {
-    // TODO: 实现保存角色的功能
-    alert(`保存角色:${id} ${roleForm.value.name} (${roleForm.value.value})`)
   } else {
-    // TODO: 实现添加角色的功能
   }
 }
 
-function initRoles() {
-  roles.value = fetchRoles()
-}
+// function initRoles() {
+//   roles.value = fetchRoles()
+// }
 function closeForm() {
   showForm.value = false
   isEditMode.value = false
   roleForm.value.name = ''
   roleForm.value.value = 0
 }
-function fetchRoles(): Role[] {
-  //TODO: 实现获取角色列表的功能
-  return [
-    { id: 1, name: '管理员', value: 1 },
-    { id: 2, name: '编辑', value: 2 },
-    { id: 3, name: '查看者', value: 3 },
-  ]
-}
+// function fetchRoles(): Role[] {
+//   //TODO: 实现获取角色列表的功能
+//   return [
+//     { id: 1, name: '管理员', value: 1 },
+//     { id: 2, name: '编辑', value: 2 },
+//     { id: 3, name: '查看者', value: 3 },
+//   ]
+// }
 function editRole(role: { key: string; value: number }) {
   isEditMode.value = true
   showForm.value = true
   roleForm.value.name = role.key
   roleForm.value.value = role.value
-  //TODO: 实现编辑角色的功能
 }
-function deleteRole(role: { id: number }) {
-  //TODO: 实现删除角色的功能
-  alert(`删除角色: ${role.id}`)
-}
+function deleteRole(role: { id: number }) {}
 </script>
 
 <style scoped>

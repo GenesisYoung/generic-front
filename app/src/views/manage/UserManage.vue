@@ -136,7 +136,9 @@
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import { Permission } from '@/assets/config/auth'
+import utilStore from '@/stores/utils'
 import type { SelectItem } from '@/types/interface'
+import { globalUtil } from '@/utils/util'
 import { computed, inject, onMounted, ref } from 'vue'
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
@@ -282,16 +284,16 @@ const saveUser = async () => {
   }
 }
 const deleteUser = async (user: User) => {
-  const confirmed = window.confirm(`Delete user ${user.name}?`)
-  if (!confirmed) {
+  await globalUtil.activeDialog(lang?.deleteUser, lang?.deleteUserContent, undefined, 2)
+  if (!utilStore().globalDialogValue) {
     return
   }
-
   try {
-    const response = await http.delete(`${apiBase}/users/${user.id}`)
-    console.log('data is ' + response.data)
-    if (!response.data) {
-      throw new Error('Delete failed')
+    const response = await http.delete(`${apiBase}/root/delete/${user.id}`)
+    if (response.data.code === 202) {
+      await globalUtil.activeDialog(lang?.deleteFail, lang?.cantDeleteRoot, undefined, 1)
+    } else if (response.data.code != 200) {
+      await globalUtil.activeDialog(lang?.deleteFail, lang?.unexpecetdError, undefined, 1)
     }
     users.value = users.value.filter((u) => u.id !== user.id)
   } catch (error) {

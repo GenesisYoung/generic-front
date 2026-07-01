@@ -21,5 +21,4 @@ const props = defineProps({
   },
 })
 const emit = defineEmits(['update:currentPage'])
-console.log('current page is ', props.currentPage)
 </script>
