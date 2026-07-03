@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppNavigation from '@/assets/components/AppNavigation.vue'
 import TabMenu from '@/assets/components/TabMenu.vue'
-import TheDialog from '@/assets/components/utils/TheDialog.vue'
+import { useAuthStore } from '@/stores/auth'
 import utilStore from '@/stores/utils'
 import { inject } from 'vue'
 type Lan = Record<string, string>
@@ -12,7 +12,26 @@ const store = utilStore()
 <template>
   <v-responsive class="border rounded">
     <v-app id="app">
-      <v-app-bar :title="lang?.title"> </v-app-bar>
+      <v-app-bar :title="lang?.title">
+        <template v-slot:append>
+          <div id="user-avartor">
+            <ul id="user-panel">
+              <li>
+                <v-btn>{{ lang?.settings }}</v-btn>
+              </li>
+              <li>
+                <v-btn @click="useAuthStore().logout">{{ lang?.logout }}</v-btn>
+              </li>
+            </ul>
+            <v-btn icon v-if="!useAuthStore().identity?.avator">
+              <v-icon>mdi-account-circle</v-icon>
+            </v-btn>
+            <v-btn v-else>
+              <img src="" alt="" srcset="" />
+            </v-btn>
+          </div>
+        </template>
+      </v-app-bar>
       <AppNavigation />
       <v-main>
         <TabMenu />
@@ -24,22 +43,43 @@ const store = utilStore()
           </router-view>
         </v-container>
       </v-main>
-      <the-dialog
+      <!-- <the-dialog
         :title="store.globalDialogTitle ?? undefined"
         :content="store.globalDialogContent ?? undefined"
         :icon="store.globalDialogIcon ?? undefined"
         :mode="store.globalDialogMode ?? undefined"
         class="global-dialog"
-      />
+      /> -->
     </v-app>
   </v-responsive>
 </template>
 
 <style>
-.global-dialog {
+/* .global-dialog {
   position: fixed;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+} */
+#user-avartor {
+  position: relative;
+  min-width: 50px;
+  min-height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#user-panel {
+  position: fixed;
+  list-style: none;
+  right: 25px;
+  top: 40px;
+  padding: 5px;
+  background-color: aliceblue;
+  color: black;
+  font-family: 'Courier New', Courier, monospace;
+  border-radius: 2px;
+  cursor: pointer;
+  user-select: none;
 }
 </style>

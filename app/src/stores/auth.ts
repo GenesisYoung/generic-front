@@ -1,9 +1,12 @@
 import http from '@/api/http'
+import { lan } from '@/lang/china_zh'
 import type { Identity, TokenPair } from '@/types/auth'
+import { globalUtil } from '@/utils/util'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-
+type Lan = Record<string, string>
+const lang: Lan = lan
 export const useAuthStore = defineStore(
   'auth',
   () => {
@@ -25,20 +28,25 @@ export const useAuthStore = defineStore(
      * The backend returns an access token, a refresh token, and user identity.
      */
     async function login(username: string, password: string): Promise<void> {
-      const response = await http.post<{ object: { tokens: TokenPair; user: Identity } }>(
-        '/auth/login',
-        {
-          username,
-          password,
-        },
-      )
-      if (response.status !== 200) {
-        throw new Error('Login failed')
+      const response = await http.post<{
+        status: number
+        object: { tokens: TokenPair; user: Identity }
+      }>('/auth/login', {
+        username,
+        password,
+      })
+      if (response.data.status !== 200) {
+        if (response.data.status === 401)
+          await globalUtil.activeDialog(lang?.loginFailure, lang?.authFail, undefined, 1)
+        else if (response.data.status == 402)
+          await globalUtil.activeDialog(lang?.disabledUser, lang?.authFail, undefined, 1)
       }
       accessToken.value = response.data.object.tokens.accessToken
       refreshToken.value = response.data.object.tokens.refreshToken
       identity.value = response.data.object.user
-
+      setTimeout(() => {
+        window.location.reload()
+      }, 200)
       await router.push('/')
     }
 
@@ -62,6 +70,21 @@ export const useAuthStore = defineStore(
       router.push('/login')
     }
 
+    async function updateRefreshToken() {
+      const resp = await http.get<{ status: number; message: string; object: string }>(
+        '/api/auth/refresh/refresh',
+      )
+      if (resp.data.status === 200) {
+        refreshToken.value = resp.data.object
+      } else {
+        accessToken.value = null
+        refreshToken.value = null
+        identity.value = null
+        refreshToken.value = resp.data.object
+        throw new Error('Refresh token failed to update')
+      }
+    }
+
     return {
       identity,
       accessToken,
@@ -71,6 +94,7 @@ export const useAuthStore = defineStore(
       login,
       refresh,
       logout,
+      updateRefreshToken,
     }
   },
   {

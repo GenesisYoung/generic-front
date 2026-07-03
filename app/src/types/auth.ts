@@ -13,6 +13,7 @@ export interface Identity {
   username: string
   email: string
   displayName: string
+  avator: string
 }
 
 export interface AuthState {

@@ -10,7 +10,7 @@ import * as directives from 'vuetify/directives'
 import 'vuetify/styles'
 
 // import '@mdi/font/css/materialdesignicons.css'
-import { registerAuthStore } from './api/http'
+import { registerAuthStore } from './api/http.ts'
 import App from './App.vue'
 import router from './router'
 import { useAuthStore } from './stores/auth'

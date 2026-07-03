@@ -29,8 +29,10 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore()
   if ('/auth/refresh/access' === config.url && store?.refreshToken) {
     config.headers.Authorization = `Bearer ${store.refreshToken}`
+    config.headers['Refresh-Token'] = store.refreshToken
   } else if (store?.accessToken) {
     config.headers.Authorization = `Bearer ${store.accessToken}`
+    config.headers['Refresh-Token'] = store.refreshToken
   }
   return config
 })
@@ -43,6 +45,10 @@ let waitingQueue: Array<(token: string) => void> = []
 
 http.interceptors.response.use(
   (resp) => {
+    const expires = Number.parseInt(resp.headers['Refresh-Token-Remaining'])
+    if (expires < 1000 * 60 * 60 * 24) {
+      getAuthStore()?.refresh()
+    }
     return resp
   },
   async (error: AxiosResponse) => {

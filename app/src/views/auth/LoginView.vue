@@ -19,7 +19,6 @@ async function handleLogin() {
   try {
     await auth.login(username.value, password.value)
   } catch (e: unknown) {
-    console.error('Login error:', e)
     const error = e as { response?: { data?: { message?: string } } }
     errorMessage.value = error?.response?.data?.message ?? 'Login failed. Please try again.'
   } finally {
@@ -62,9 +61,7 @@ async function handleLogin() {
           </v-card-text>
 
           <v-card-actions class="pa-6 pt-0">
-            <v-btn block color="primary" size="large" :loading="loading" @click="handleLogin">
-              Sign In
-            </v-btn>
+            <v-btn block color="primary" size="large" @click="handleLogin"> Sign In </v-btn>
           </v-card-actions>
         </v-card>
       </v-container>

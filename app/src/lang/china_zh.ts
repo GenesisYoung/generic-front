@@ -92,6 +92,10 @@ const mapping: Record<string, string> = {
   deleteFail: '删除用户失败',
   unexpecetdError: '服务器发生了未知错误！',
   cantDeleteRoot: '无法删除管理员账户',
+  loginFailure: '登录异常',
+  authFail: '账号或者密码错误',
+  disabledUser: '该账号已被停止授权',
+  logout: '注销',
 }
 type Lan = typeof mapping
 export { mapping as lan }
