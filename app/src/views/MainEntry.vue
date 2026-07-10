@@ -2,11 +2,13 @@
 import AppNavigation from '@/assets/components/AppNavigation.vue'
 import TabMenu from '@/assets/components/TabMenu.vue'
 import { useAuthStore } from '@/stores/auth'
-import utilStore from '@/stores/utils'
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
-const store = utilStore()
+const showPanel = ref(false)
+function togglePanel() {
+  showPanel.value = !showPanel.value
+}
 </script>
 
 <template>
@@ -15,7 +17,7 @@ const store = utilStore()
       <v-app-bar :title="lang?.title">
         <template v-slot:append>
           <div id="user-avartor">
-            <ul id="user-panel">
+            <ul id="user-panel" v-if="showPanel">
               <li>
                 <v-btn>{{ lang?.settings }}</v-btn>
               </li>
@@ -23,11 +25,11 @@ const store = utilStore()
                 <v-btn @click="useAuthStore().logout">{{ lang?.logout }}</v-btn>
               </li>
             </ul>
-            <v-btn icon v-if="!useAuthStore().identity?.avator">
+            <v-btn icon v-if="!useAuthStore().identity?.avator" @click="togglePanel">
               <v-icon>mdi-account-circle</v-icon>
             </v-btn>
-            <v-btn v-else>
-              <img src="" alt="" srcset="" />
+            <v-btn v-else @click="togglePanel">
+              <img :src="useAuthStore().identity?.avator" alt="" srcset="" />
             </v-btn>
           </div>
         </template>

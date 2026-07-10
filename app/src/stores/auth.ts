@@ -31,15 +31,16 @@ export const useAuthStore = defineStore(
       const response = await http.post<{
         status: number
         object: { tokens: TokenPair; user: Identity }
+        message: string
       }>('/auth/login', {
         username,
         password,
       })
       if (response.data.status !== 200) {
         if (response.data.status === 401)
-          await globalUtil.activeDialog(lang?.loginFailure, lang?.authFail, undefined, 1)
+          await globalUtil.activeDialog(lang?.loginFailure, response.data.message, undefined, 1)
         else if (response.data.status == 402)
-          await globalUtil.activeDialog(lang?.disabledUser, lang?.authFail, undefined, 1)
+          await globalUtil.activeDialog(lang?.disabledUser, response.data.message, undefined, 1)
       }
       accessToken.value = response.data.object.tokens.accessToken
       refreshToken.value = response.data.object.tokens.refreshToken
@@ -67,6 +68,9 @@ export const useAuthStore = defineStore(
       identity.value = null
       accessToken.value = null
       refreshToken.value = null
+      setTimeout(() => {
+        window.location.reload()
+      }, 50)
       router.push('/login')
     }
 
