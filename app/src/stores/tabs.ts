@@ -15,6 +15,7 @@ export const useTabsStore = defineStore('tabs', {
       this.activeTab = tab.id
     },
     removeTab(tabId: string) {
+      if (this.tabs.length === 1) return
       this.tabs = this.tabs.filter((t) => t.id !== tabId)
       if (this.activeTab === tabId) {
         this.activeTab = this.tabs.length > 0 ? this.tabs[0]!.id : ''
