@@ -37,13 +37,16 @@ function togglePanel() {
       <AppNavigation />
       <v-main>
         <TabMenu />
-        <v-container>
-          <router-view v-slot="{ Component }">
-            <keep-alive>
-              <component :is="Component" />
-            </keep-alive>
-          </router-view>
-        </v-container>
+        <Suspense>
+          <v-container>
+            <router-view v-slot="{ Component }">
+              <keep-alive>
+                <component :is="Component" />
+              </keep-alive>
+            </router-view>
+          </v-container>
+          <template #fallback>{{ lang?.loading }}</template>
+        </Suspense>
       </v-main>
       <!-- <the-dialog
         :title="store.globalDialogTitle ?? undefined"

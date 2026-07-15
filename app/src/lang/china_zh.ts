@@ -96,6 +96,12 @@ const mapping: Record<string, string> = {
   authFail: '账号或者密码错误',
   disabledUser: '该账号已被停止授权',
   logout: '注销',
+  actionList: '操作列表',
+  menuList: '菜单列表',
+  name: '名称',
+  addRootPermission: '添加根权限',
+  removeRootPermission: '移除根权限',
+  submit: '提交',
 }
 type Lan = typeof mapping
 export { mapping as lan }

@@ -13,28 +13,37 @@ const manage: Route[] = [
     },
   },
   {
-    path: '/manage/roles',
+    path: '/permission/management',
     name: 'roleManagement',
-    component: () => import('@/views/manage/RoleManage.vue'),
-    redirect: '/manage/roles/list',
+    component: () => import('@/views/manage/PermissionManage.vue'),
+    redirect: '/permission/management/permissions',
     meta: {
       requireAuth: true,
       permission: Permission.ROOT,
     },
     children: [
       {
-        path: 'list',
-        name: 'roleList',
-        component: () => import('@/views/manage/RoleList.vue'),
+        path: 'actions',
+        name: 'actionList',
+        component: () => import('@/views/manage/ActionList.vue'),
         meta: {
           requireAuth: true,
           permission: Permission.ROOT,
         },
       },
       {
-        path: 'distribute',
-        name: 'roleDistribute',
-        component: () => import('@/views/manage/RoleDistribute.vue'),
+        path: 'permissions',
+        name: 'permissionList',
+        component: () => import('@/views/manage/PermissionList.vue'),
+        meta: {
+          requireAuth: true,
+          permission: Permission.ROOT,
+        },
+      },
+      {
+        path: 'menus',
+        name: 'menuList',
+        component: () => import('@/views/manage/MenuList.vue'),
         meta: {
           requireAuth: true,
           permission: Permission.ROOT,
