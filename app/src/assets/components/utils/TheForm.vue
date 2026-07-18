@@ -11,7 +11,7 @@
   max-width: 650px;
   max-height: 450px;
   overflow: scroll;
-  z-index: 9999999;
+  z-index: 999;
   position: fixed;
   top: 25%;
   left: 25%;

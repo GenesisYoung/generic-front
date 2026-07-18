@@ -99,9 +99,9 @@ const mapping: Record<string, string> = {
   actionList: '操作列表',
   menuList: '菜单列表',
   name: '名称',
-  addRootPermission: '添加根权限',
-  removeRootPermission: '移除根权限',
+  removePermission: '移除权限',
   submit: '提交',
+  error: '错误',
 }
 type Lan = typeof mapping
 export { mapping as lan }
