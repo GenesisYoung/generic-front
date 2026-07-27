@@ -8,23 +8,61 @@ import { inject, onMounted, ref } from 'vue'
 type Lan = Record<string, string>
 const lan: Lan | undefined = inject('lan')
 const currentPage = ref(1)
-const pageSize = ref(5)
+const pageSize = ref(10)
 const pageCount = ref(0)
-const rootPermissions = ref<Array<{ id: number; permissionName: string; val: number }>>([])
+const permissionsRespsonse = ref<
+  Array<{ id: number; permissionName: string; val: number; show: string }>
+>([])
 const showForm = ref(false)
 const selections = ref()
-const formData = ref<{ id: number | null; permissionName: string; val: number | null }>({
+const permissionRoot = ref(new Set<string>())
+const permission = ref(
+  new Map<string, { id: number; permissionName: string; val: number; show: string }[]>(),
+)
+const formData = ref<{
+  id: number | null
+  permissionName: string
+  val: number | null
+}>({
   id: null,
   permissionName: '',
   val: null,
 })
 const fetchPermissions = async (page: number) => {
   currentPage.value = page
+  permissionRoot.value = new Set<string>()
+  permission.value = new Map<
+    string,
+    { id: number; permissionName: string; val: number; show: string }[]
+  >()
   const resp = await http.get(
     `/admin/permissions/fetch?page=${currentPage.value - 1}&size=${pageSize.value}`,
   )
   if (resp.data.content) {
-    rootPermissions.value = resp.data.content
+    permissionsRespsonse.value = resp.data.content
+    permissionsRespsonse.value.forEach((ele) => {
+      const val = ele.permissionName
+      const v = val.split('.')
+      if (v[0] != undefined) {
+        permissionRoot.value.add(v[0])
+        if (!permission.value.get(v[0])) {
+          permission.value.set(
+            v[0],
+            new Array<{
+              id: number
+              permissionName: string
+              val: number
+              show: string
+            }>(),
+          )
+        }
+        if (v[1] != undefined && permission.value.get(v[0]) != undefined) {
+          const list = permission.value.get(v[0])
+          list?.push({ id: ele.id, val: ele.val, permissionName: ele.permissionName, show: v[1] })
+          if (list != undefined) permission.value.set(v[0], list)
+        }
+      }
+    })
     pageCount.value = resp.data.totalPages
   }
 }
@@ -44,6 +82,9 @@ function cancel() {
   showForm.value = false
   formData.value = { id: null, permissionName: '', val: null }
 }
+function remove() {
+  console.log(selections.value)
+}
 
 onMounted(async () => {
   await fetchPermissions(currentPage.value)
@@ -57,7 +98,7 @@ onMounted(async () => {
         ><v-btn color="deep-purple" @click="addRecord">{{ lan?.addPermission }}</v-btn></v-col
       >
       <v-col :cols="2"
-        ><v-btn color="red">{{ lan?.removePermission }}</v-btn></v-col
+        ><v-btn color="red" @click="remove">{{ lan?.removePermission }}</v-btn></v-col
       >
       <v-col :cols="4">
         <v-text-field :label="lan?.name" append-icon="mdi-magnify" />
@@ -65,23 +106,28 @@ onMounted(async () => {
     </v-row>
     <v-row>
       <v-col>
-        <v-list v-model="selections" select-strategy="classic">
-          <v-list-item
-            v-for="permission in rootPermissions"
-            :key="permission.id"
-            :value="permission.val"
-            :title="permission.permissionName"
-            :subtitle="permission.val"
-          >
-            <template v-slot:prepend="{ isSelected, select }">
-              <v-list-item-action start>
-                <v-checkbox-btn
-                  :model-value="isSelected"
-                  @update:model-value="select"
-                ></v-checkbox-btn>
-              </v-list-item-action>
+        <v-list v-model:selected="selections" select-strategy="classic">
+          <v-list-group v-for="root in permissionRoot">
+            <template v-slot:activator="{ props }">
+              <v-list-item v-bind="props" :title="root"></v-list-item>
             </template>
-          </v-list-item>
+            <v-list-item
+              v-for="val in permission.get(root)"
+              :key="val.id"
+              :value="val.val"
+              :title="val.show"
+              :subtitle="val.val"
+            >
+              <template v-slot:prepend="{ isSelected, select }">
+                <v-list-item-action start>
+                  <v-checkbox-btn
+                    :model-value="isSelected"
+                    @update:model-value="select"
+                  ></v-checkbox-btn>
+                </v-list-item-action>
+              </template>
+            </v-list-item>
+          </v-list-group>
         </v-list>
       </v-col>
     </v-row>

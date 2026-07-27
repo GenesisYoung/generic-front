@@ -9,7 +9,7 @@
     </header>
 
     <div class="table-wrapper">
-      <v-table class="user-table">
+      <v-table class="user-table" height="400px">
         <thead>
           <tr>
             <th style="width: 5%">#</th>
@@ -49,10 +49,10 @@
               </span>
             </td>
             <td class="actions-col">
-              <v-btn class="mr-2" color="indigo" variant="flat" @click="openEdit(user)">
+              <v-btn class="mr-2 mt-2 mb-1" color="indigo" variant="flat" @click="openEdit(user)">
                 {{ lang?.edit }}
               </v-btn>
-              <v-btn class="mr-2" color="red" variant="flat" @click="deleteUser(user)">
+              <v-btn class="mr-2 mt-2 mb-1" color="red" variant="flat" @click="deleteUser(user)">
                 {{ lang?.delete }}
               </v-btn>
             </td>
@@ -151,6 +151,7 @@ interface User {
   roles: Array<number> // ✅ number, not string
   roleStr: string
   active: boolean
+  isEnabled: number
 }
 
 const users = ref<User[]>([])
@@ -166,6 +167,7 @@ const formUser = ref<User>({
   roles: [],
   roleStr: 'ROOT',
   active: true,
+  isEnabled: 1,
 })
 const roles = ref<SelectItem[]>([])
 {
@@ -227,6 +229,7 @@ const openCreate = () => {
     roles: [1001],
     roleStr: 'ROOT',
     active: true,
+    isEnabled: 1,
   }
   showForm.value = true
 }
@@ -243,6 +246,7 @@ const openEdit = (user: User) => {
       .filter(Boolean)
       .join(','),
     active: user.active,
+    isEnabled: 1,
   }
   showForm.value = true
 }
@@ -261,6 +265,7 @@ const saveUser = async () => {
     email: formUser.value.email.trim(),
     roles: formUser.value.roles,
     active: formUser.value.active,
+    isEnabled: 1,
   }
 
   if (!payload.name || !payload.email) {
@@ -371,49 +376,6 @@ onMounted(async () => {
   border: 1px solid #e5e7eb;
   border-radius: 16px;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
-}
-
-.user-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 640px;
-  table-layout: fixed;
-}
-
-.user-table td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap; /* Rule 2: stop the text from wrapping/expanding */
-}
-
-.user-table :deep(table) {
-  table-layout: fixed;
-  width: 100%;
-}
-
-.user-table :deep(td) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 0; /* helps fixed layout honor the % strictly */
-}
-
-.user-table th,
-.user-table td {
-  padding: 14px 16px;
-  text-align: left;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.user-table th {
-  background: #14406c;
-  color: #ffffff;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.user-table tbody tr:hover {
-  background: #065f46;
 }
 
 .actions-col {
