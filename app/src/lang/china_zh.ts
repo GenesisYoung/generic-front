@@ -103,6 +103,15 @@ const mapping: Record<string, string> = {
   submit: '提交',
   error: '错误',
   noAvaiableData: '无可用数据',
+  addMenu: '添加菜单',
+  editMenu: '编辑菜单',
+  deleteMenu: '删除菜单',
+  deleteMenuContent: '是否确认删除该菜单？',
+  menuId: 'ID',
+  menuTitleKey: '标题键',
+  menuIcon: '图标',
+  menuRoute: '路由',
+  menuColor: '颜色',
 }
 type Lan = typeof mapping
 export { mapping as lan }
