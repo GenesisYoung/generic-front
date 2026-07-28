@@ -78,6 +78,22 @@ const mapping: Record<string, string> = {
   permissionName: 'Permission Name',
   permissionDescription: 'Permission Description',
   noPermissionFound: 'No permissions found',
+  actionList: 'Action List',
+  menuList: 'Menu List',
+  name: 'Name',
+  removePermission: 'Remove Permission',
+  submit: 'Submit',
+  error: 'Error',
+  noAvaiableData: 'No available data',
+  addMenu: 'Add Menu',
+  editMenu: 'Edit Menu',
+  deleteMenu: 'Delete Menu',
+  deleteMenuContent: 'Are you sure you want to delete this menu?',
+  menuId: 'ID',
+  menuTitleKey: 'Title Key',
+  menuIcon: 'Icon',
+  menuRoute: 'Route',
+  menuColor: 'Color',
 }
 type Lan = typeof mapping
 export { mapping as lan }
