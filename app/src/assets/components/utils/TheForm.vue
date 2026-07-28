@@ -1,21 +1,17 @@
 <template>
-  <v-container id="global-form-dialog" class="bg-blue-grey-lighten-3">
-    <slot name="form"></slot>
-  </v-container>
+  <div class="modal-backdrop">
+    <v-card id="global-form-dialog" class="modal-panel" rounded="lg" elevation="0">
+      <v-card-text class="pa-5">
+        <slot name="form"></slot>
+      </v-card-text>
+    </v-card>
+  </div>
 </template>
 
 <script lang="ts" setup></script>
 
-<style>
+<style scoped>
 #global-form-dialog {
-  max-width: 650px;
-  max-height: 450px;
-  overflow: scroll;
-  z-index: 999;
-  position: fixed;
-  top: 25%;
-  left: 25%;
-  transform: translate(25%, 25%);
-  border-radius: 1.25rem;
+  width: min(650px, 92vw);
 }
 </style>

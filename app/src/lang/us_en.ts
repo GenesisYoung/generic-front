@@ -62,6 +62,7 @@ const mapping: Record<string, string> = {
   cancel: 'Cancel',
   saveChanges: 'Save Changes',
   createUser: 'Create User',
+  editUser: 'Edit User',
   activeAccount: 'Active Account',
   roleManage: 'Role Management',
   roleManageDescription: 'Manage roles and permissions',

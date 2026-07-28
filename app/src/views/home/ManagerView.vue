@@ -1,6 +1,6 @@
 <template>
-  <v-responsive class="border rounded">
-    <v-container class="container">
+  <div class="page">
+    <div class="container">
       <v-card class="card-inline auto-grow">
         <v-card-title>{{ lang.totalRevenueDaily }}</v-card-title>
         <v-card-text>{{ lang.currency }}{{ totalRevenue.toFixed(2) }}</v-card-text>
@@ -16,21 +16,21 @@
         <v-card-text>{{ activeUsersToday }}</v-card-text>
         <v-card-subtitle>{{ active_users_desc }}</v-card-subtitle>
       </v-card>
-    </v-container>
-    <v-container class="container card back-light">
+    </div>
+    <div class="surface-card">
       <v-row class="center">
-        <v-col lg="8" md="12" sm="12">
+        <v-col cols="12" lg="8">
           <div id="revenue-chart" class="chart"></div>
         </v-col>
-        <v-col lg="4" md="12" sm="12">
+        <v-col cols="12" lg="4">
           <div id="order-status-chart" class="chart"></div>
         </v-col>
       </v-row>
-    </v-container>
-    <v-container class="container">
-      <v-row>
-        <v-col lg="8" md="6" sm="12">
-          <v-table id="order-list" class="fatted back-dark border-rounded">
+    </div>
+    <v-row>
+      <v-col cols="12" lg="8">
+        <div class="table-wrapper">
+          <v-table id="order-list">
             <thead>
               <tr>
                 <th>{{ lang.orderId }}</th>
@@ -52,13 +52,13 @@
               </tr>
             </tbody>
           </v-table>
-        </v-col>
-        <v-col lg="4" md="6" sm="12">
-          <div id="order-distribution-chart" class="chart"></div>
-        </v-col>
-      </v-row>
-    </v-container>
-  </v-responsive>
+        </div>
+      </v-col>
+      <v-col cols="12" lg="4">
+        <div id="order-distribution-chart" class="chart"></div>
+      </v-col>
+    </v-row>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -206,7 +206,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import '@/assets/styles/main.css';
 .chart {
   width: 100%;
   height: 300px;

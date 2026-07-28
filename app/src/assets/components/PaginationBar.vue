@@ -1,12 +1,13 @@
 <template>
-  <v-container>
+  <div class="center">
     <v-pagination
       :model-value="props.currentPage"
       :length="props.totalPages"
+      :total-visible="5"
       density="comfortable"
       @update:model-value="emit('update:currentPage', $event)"
     />
-  </v-container>
+  </div>
 </template>
 
 <script setup lang="ts">

@@ -88,51 +88,45 @@ onMounted(async () => {
 </script>
 
 <template>
-  <v-container>
-    <v-row :justify="'end'" :align="'baseline'">
-      <v-col :cols="2">
-        <v-btn color="deep-purple" @click="addRecord">{{ lan?.addMenu }}</v-btn>
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col v-if="menus.length > 0">
-        <v-table>
-          <thead>
-            <tr>
-              <th>{{ lan?.menuId }}</th>
-              <th>{{ lan?.menuTitleKey }}</th>
-              <th>{{ lan?.menuIcon }}</th>
-              <th>{{ lan?.menuRoute }}</th>
-              <th>{{ lan?.menuColor }}</th>
-              <th>{{ lan?.actions }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in menus" :key="item.id ?? undefined">
-              <td>{{ item.id }}</td>
-              <td>{{ item.titleKey }}</td>
-              <td>
-                <v-icon :color="item.color" :icon="formatIcon(item.icon)" class="mr-1" />
-                {{ item.icon }}
-              </td>
-              <td>{{ item.route }}</td>
-              <td>
-                <v-chip :color="item.color" size="small">{{ item.color }}</v-chip>
-              </td>
-              <td>
-                <v-btn color="indigo" size="small" class="mr-2" @click="editRecord(item)">
-                  {{ lan?.edit }}
-                </v-btn>
-                <v-btn color="red" size="small" @click="remove(item)">{{ lan?.delete }}</v-btn>
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
-      </v-col>
-      <v-col v-else>
-        <article style="text-align: center">{{ lan?.noAvaiableData }}</article>
-      </v-col>
-    </v-row>
+  <div class="page">
+    <div class="toolbar" style="justify-content: flex-end">
+      <v-btn color="primary" @click="addRecord">{{ lan?.addMenu }}</v-btn>
+    </div>
+    <div v-if="menus.length > 0" class="table-wrapper">
+      <v-table>
+        <thead>
+          <tr>
+            <th>{{ lan?.menuId }}</th>
+            <th>{{ lan?.menuTitleKey }}</th>
+            <th>{{ lan?.menuIcon }}</th>
+            <th>{{ lan?.menuRoute }}</th>
+            <th>{{ lan?.menuColor }}</th>
+            <th class="actions-col">{{ lan?.actions }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in menus" :key="item.id ?? undefined">
+            <td>{{ item.id }}</td>
+            <td>{{ item.titleKey }}</td>
+            <td>
+              <v-icon :color="item.color" :icon="formatIcon(item.icon)" class="mr-1" />
+              {{ item.icon }}
+            </td>
+            <td>{{ item.route }}</td>
+            <td>
+              <v-chip :color="item.color" size="small">{{ item.color }}</v-chip>
+            </td>
+            <td class="actions-col">
+              <v-btn color="indigo" size="small" class="mr-2" @click="editRecord(item)">
+                {{ lan?.edit }}
+              </v-btn>
+              <v-btn color="red" size="small" @click="remove(item)">{{ lan?.delete }}</v-btn>
+            </td>
+          </tr>
+        </tbody>
+      </v-table>
+    </div>
+    <article v-else class="center py-8">{{ lan?.noAvaiableData }}</article>
     <the-form v-if="showForm">
       <template #form>
         <v-row>
@@ -142,8 +136,8 @@ onMounted(async () => {
             <v-text-field :label="lan?.menuIcon" v-model="formData.icon" />
             <v-text-field :label="lan?.menuRoute" v-model="formData.route" />
             <v-text-field :label="lan?.menuColor" v-model="formData.color" />
-            <v-btn :text="lan?.submit" color="green" class="ml-2" @click="submitData" />
-            <v-btn :text="lan?.cancel" color="red" class="ml-2" @click="cancel" />
+            <v-btn :text="lan?.submit" color="green" class="mr-2" @click="submitData" />
+            <v-btn :text="lan?.cancel" color="red" @click="cancel" />
           </v-col>
         </v-row>
       </template>
@@ -154,7 +148,5 @@ onMounted(async () => {
       :total-pages="pageCount"
       @update:current-page="fetchMenus"
     />
-  </v-container>
+  </div>
 </template>
-
-<style></style>

@@ -97,56 +97,52 @@ onMounted(async () => {
 </script>
 
 <template>
-  <v-container>
-    <v-row :justify="`end`" :align="'baseline'">
-      <v-col :cols="2"
-        ><v-btn color="deep-purple" @click="addRecord">{{ lan?.addPermission }}</v-btn></v-col
-      >
-      <v-col :cols="2"
-        ><v-btn color="red" @click="remove">{{ lan?.removePermission }}</v-btn></v-col
-      >
-      <v-col :cols="4">
-        <v-text-field :label="lan?.name" append-icon="mdi-magnify" />
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col v-if="permissionRoot.size > 0">
-        <v-list v-model:selected="selections" select-strategy="classic">
-          <v-list-group v-for="root in permissionRoot">
-            <template v-slot:activator="{ props }">
-              <v-list-item v-bind="props" :title="root"></v-list-item>
+  <div class="page">
+    <div class="toolbar">
+      <v-btn color="primary" @click="addRecord">{{ lan?.addPermission }}</v-btn>
+      <v-btn color="red" variant="tonal" @click="remove">{{ lan?.removePermission }}</v-btn>
+      <v-text-field
+        :label="lan?.name"
+        append-icon="mdi-magnify"
+        hide-details
+        density="compact"
+        class="auto-grow"
+        style="min-width: 220px; max-width: 360px"
+      />
+    </div>
+    <div v-if="permissionRoot.size > 0" class="surface-card pa-0">
+      <v-list v-model:selected="selections" select-strategy="classic">
+        <v-list-group v-for="root in permissionRoot" :key="root">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" :title="root"></v-list-item>
+          </template>
+          <v-list-item
+            v-for="val in permission.get(root)"
+            :key="val.id"
+            :value="val.val"
+            :title="val.show"
+            :subtitle="val.val"
+          >
+            <template v-slot:prepend="{ isSelected, select }">
+              <v-list-item-action start>
+                <v-checkbox-btn
+                  :model-value="isSelected"
+                  @update:model-value="select"
+                ></v-checkbox-btn>
+              </v-list-item-action>
             </template>
-            <v-list-item
-              v-for="val in permission.get(root)"
-              :key="val.id"
-              :value="val.val"
-              :title="val.show"
-              :subtitle="val.val"
-            >
-              <template v-slot:prepend="{ isSelected, select }">
-                <v-list-item-action start>
-                  <v-checkbox-btn
-                    :model-value="isSelected"
-                    @update:model-value="select"
-                  ></v-checkbox-btn>
-                </v-list-item-action>
-              </template>
-            </v-list-item>
-          </v-list-group>
-        </v-list>
-      </v-col>
-      <v-col v-else>
-        <article style="text-align: center">{{ lan?.noAvaiableData }}</article>
-      </v-col>
-    </v-row>
+          </v-list-item>
+        </v-list-group>
+      </v-list>
+    </div>
+    <article v-else class="center py-8">{{ lan?.noAvaiableData }}</article>
     <the-form v-if="showForm">
       <template #form>
         <v-row>
           <v-col>
             <v-text-field :label="lan?.name" v-model="formData.permissionName" />
-            <!-- <input type="text" v-model="formData.permissionName" /> -->
-            <v-btn :text="lan?.submit" color="green" class="ml-2" @click="submitData" />
-            <v-btn :text="lan?.cancel" color="red" class="ml-2" @click="cancel" />
+            <v-btn :text="lan?.submit" color="green" class="mr-2" @click="submitData" />
+            <v-btn :text="lan?.cancel" color="red" @click="cancel" />
           </v-col>
         </v-row>
       </template>
@@ -157,7 +153,7 @@ onMounted(async () => {
       :total-pages="pageCount"
       @update:current-page="fetchPermissions"
     />
-  </v-container>
+  </div>
 </template>
 
 <style></style>
