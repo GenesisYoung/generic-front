@@ -82,8 +82,13 @@ function cancel() {
   showForm.value = false
   formData.value = { id: null, permissionName: '', val: null }
 }
-function remove() {
-  console.log(selections.value)
+async function remove() {
+  const resp = await http.post('/admin/permissions/delete', { deleteVal: selections.value })
+  if (resp.data.status != 200) {
+    globalUtil.activeDialog(lan?.error, resp.data.message, undefined)
+  }
+  showForm.value = false
+  await fetchPermissions(currentPage.value)
 }
 
 onMounted(async () => {
@@ -105,7 +110,7 @@ onMounted(async () => {
       </v-col>
     </v-row>
     <v-row>
-      <v-col>
+      <v-col v-if="permissionRoot.size > 0">
         <v-list v-model:selected="selections" select-strategy="classic">
           <v-list-group v-for="root in permissionRoot">
             <template v-slot:activator="{ props }">
@@ -130,6 +135,9 @@ onMounted(async () => {
           </v-list-group>
         </v-list>
       </v-col>
+      <v-col v-else>
+        <article style="text-align: center">{{ lan?.noAvaiableData }}</article>
+      </v-col>
     </v-row>
     <the-form v-if="showForm">
       <template #form>
@@ -144,6 +152,7 @@ onMounted(async () => {
       </template>
     </the-form>
     <pagination-bar
+      v-if="permissionRoot.size > 0"
       :current-page="currentPage"
       :total-pages="pageCount"
       @update:current-page="fetchPermissions"

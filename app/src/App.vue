@@ -29,4 +29,7 @@ const store = utilStore()
   top: 50%;
   transform: translate(-50%, -50%);
 }
+* {
+  font-family: 'Elvenscript Table', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 </style>

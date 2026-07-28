@@ -102,6 +102,7 @@ const mapping: Record<string, string> = {
   removePermission: '移除权限',
   submit: '提交',
   error: '错误',
+  noAvaiableData: '无可用数据',
 }
 type Lan = typeof mapping
 export { mapping as lan }

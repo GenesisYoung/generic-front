@@ -55,9 +55,10 @@ export const useAuthStore = defineStore(
      * Called automatically by the Axios interceptor when a 401 is received.
      * Returns the new access token so the interceptor can retry the request.
      */
-    async function refresh(): Promise<string> {
+    async function refresh(): Promise<string | null> {
       const response = await http.post<{ object: string }>('/auth/refresh/access')
-      accessToken.value = response.data.object
+      const data = response.data
+      accessToken.value = data.object
       return accessToken.value
     }
 

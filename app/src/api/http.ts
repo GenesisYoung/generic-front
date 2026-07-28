@@ -1,6 +1,5 @@
 import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
-
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
     _retried?: boolean
@@ -52,15 +51,19 @@ http.interceptors.response.use(
     return resp
   },
   async (error: AxiosResponse) => {
+    const store = getAuthStore()
     const originalRequest = error.config
-    // Only handle 401 errors, and only retry once (avoid infinite loop).
+    if (originalRequest.url?.includes('/auth/refresh/access')) {
+      store?.logout()
+      return Promise.reject(error)
+    }
     if (error?.status !== 403 || originalRequest._retried) {
+      // Only handle 401 errors, and only retry once (avoid infinite loop).
       return Promise.reject(error)
     }
 
     originalRequest._retried = true
 
-    const store = getAuthStore()
     if (!store?.refreshToken) {
       store?.logout()
       return Promise.reject(error)
@@ -82,7 +85,7 @@ http.interceptors.response.use(
     try {
       const newAccessToken = await store.refresh()
       // Retry all queued requests with the new token.
-      waitingQueue.forEach((cb) => cb(newAccessToken))
+      waitingQueue.forEach((cb) => cb(newAccessToken!))
       waitingQueue = []
       originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
       return http(originalRequest)
