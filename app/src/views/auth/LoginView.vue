@@ -29,12 +29,12 @@ async function handleLogin() {
 
 <template>
   <v-app>
-    <v-main>
-      <v-container class="d-flex align-center justify-center" style="min-height: 100vh">
-        <v-card width="420" elevation="4" rounded="lg">
+    <v-main class="login-page">
+      <v-container class="d-flex align-center justify-center login-container">
+        <v-card max-width="420" width="100%" elevation="8" rounded="lg" :loading="loading">
           <v-card-title class="text-h5 font-weight-bold pa-6 pb-2"> Sign In </v-card-title>
 
-          <v-card-text class="pa-6">
+          <v-card-text class="pa-6 pt-0">
             <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-4">
               {{ errorMessage }}
             </v-alert>
@@ -46,6 +46,7 @@ async function handleLogin() {
               variant="outlined"
               autocomplete="username"
               class="mb-3"
+              :disabled="loading"
               @keyup.enter="handleLogin"
             />
 
@@ -56,15 +57,40 @@ async function handleLogin() {
               prepend-inner-icon="mdi-lock"
               variant="outlined"
               autocomplete="current-password"
+              :disabled="loading"
               @keyup.enter="handleLogin"
             />
           </v-card-text>
 
           <v-card-actions class="pa-6 pt-0">
-            <v-btn block color="primary" size="large" @click="handleLogin"> Sign In </v-btn>
+            <v-btn
+              block
+              variant="flat"
+              color="primary"
+              size="large"
+              :loading="loading"
+              @click="handleLogin"
+            >
+              Sign In
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-container>
     </v-main>
   </v-app>
 </template>
+
+<style scoped>
+.login-page {
+  background: linear-gradient(
+    135deg,
+    rgb(var(--v-theme-primary)) 0%,
+    rgb(var(--v-theme-secondary)) 100%
+  );
+}
+
+.login-container {
+  min-height: 100vh;
+  padding: var(--space-4);
+}
+</style>

@@ -1,7 +1,14 @@
 <template>
-  <v-navigation-drawer>
-    <v-list>
-      <v-list-item v-for="item in menu" :key="item.route" :to="item.route">
+  <v-navigation-drawer v-model="drawer" :temporary="mobile" :permanent="!mobile" width="260">
+    <v-list nav density="comfortable" class="pa-2">
+      <v-list-item
+        v-for="item in menu"
+        :key="item.route"
+        :to="item.route"
+        rounded="lg"
+        class="mb-1"
+        @click="mobile && (drawer = false)"
+      >
         <template #prepend>
           <v-icon :color="item.color" :icon="formatIcon(item.icon)" />
         </template>
@@ -15,10 +22,13 @@
 import http from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import { inject, onMounted, ref } from 'vue'
+import { useDisplay } from 'vuetify'
 import type { NavItem } from '../config/navigation'
 
 type Lan = Record<string, string>
 
+const drawer = defineModel<boolean>({ default: false })
+const { mobile } = useDisplay()
 const menu = ref<NavItem[]>([])
 const lang: Lan | undefined = inject('lan')
 
@@ -37,8 +47,6 @@ async function fetchNavMenu() {
 }
 
 onMounted(async () => {
-  const start = Date.now()
   await fetchNavMenu()
-  const end = Date.now()
 })
 </script>

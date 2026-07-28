@@ -18,18 +18,5 @@ const store = utilStore()
     :content="store.globalDialogContent ?? undefined"
     :icon="store.globalDialogIcon ?? undefined"
     :mode="store.globalDialogMode ?? undefined"
-    class="global-dialog"
   />
 </template>
-
-<style scoped>
-.global-dialog {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-* {
-  font-family: 'Elvenscript Table', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-</style>

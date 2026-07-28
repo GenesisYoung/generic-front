@@ -1,55 +1,315 @@
+/* ==========================================================================
+   Generic ERP — Global Design System
+   --------------------------------------------------------------------------
+   Single source of truth for design tokens and shared UI patterns, used by
+   every page. Imported exactly once, globally, in main.ts — do NOT
+   `@import` this file again inside a component's <style scoped>, or you'll
+   get duplicate/scoped copies that drift from this file.
+
+   See docs: the "Global CSS Manual" artifact covers every token/class below
+   with usage examples.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Design tokens
+   -------------------------------------------------------------------------- */
+:root {
+  /* Spacing scale (4px base unit) */
+  --space-1: 0.25rem; /* 4px  */
+  --space-2: 0.5rem; /* 8px  */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.5rem; /* 24px */
+  --space-6: 2rem; /* 32px */
+  --space-8: 3rem; /* 48px */
+
+  /* Radius scale */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 3px rgba(15, 10, 30, 0.08);
+  --shadow-md: 0 8px 24px rgba(15, 10, 30, 0.1);
+  --shadow-lg: 0 20px 45px rgba(15, 10, 30, 0.18);
+
+  /* Typography */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: clamp(1.5rem, 1.25rem + 1.1vw, 2rem);
+  --text-3xl: clamp(2rem, 1.5rem + 2.2vw, 3rem);
+
+  /* Motion */
+  --transition-fast: 150ms ease;
+  --transition-base: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Breakpoints — for reference in the manual; media queries below match
+     Vuetify's own grid breakpoints (xs<600, sm<960, md<1264, lg<1904) so
+     custom CSS and v-col responsiveness always agree. */
+  --bp-sm: 600px;
+  --bp-md: 960px;
+  --bp-lg: 1264px;
+
+  /* Semantic color aliases — sourced from Vuetify's active theme so light
+     and dark mode stay in sync automatically. Vuetify writes
+     --v-theme-<name> as an "r,g,b" triplet onto .v-theme--light /
+     .v-theme--dark (see theme/primary.ts for the actual hex values). */
+  --color-primary: rgb(var(--v-theme-primary));
+  --color-secondary: rgb(var(--v-theme-secondary));
+  --color-background: rgb(var(--v-theme-background));
+  --color-surface: rgb(var(--v-theme-surface));
+  --color-surface-variant: rgb(var(--v-theme-surface-variant));
+  --color-on-surface: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity, 0.87));
+  --color-on-surface-variant: rgb(var(--v-theme-on-surface-variant));
+  --color-border: rgba(var(--v-border-color), var(--v-border-opacity, 0.12));
+  --color-error: rgb(var(--v-theme-error));
+  --color-success: rgb(var(--v-theme-success));
+  --color-warning: rgb(var(--v-theme-warning));
+  --color-info: rgb(var(--v-theme-info));
+}
+
+/* --------------------------------------------------------------------------
+   2. Base
+   -------------------------------------------------------------------------- */
 * {
   box-sizing: border-box;
-  font-family: 'Elvenscript Table', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+}
+
+img {
+  max-width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   3. Layout primitives
+   -------------------------------------------------------------------------- */
+
+/* Standard page wrapper: consistent max-width, gutters and vertical rhythm
+   across every view. Use on the outermost element of a page. */
+.page {
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-5);
+  max-width: 1180px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: var(--space-4);
+    gap: var(--space-4);
+  }
+}
+
+/* Page title + description + primary action, wraps on narrow screens */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.page-header h1,
+.page-header h2 {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+}
+
+.page-header p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-on-surface-variant);
+  font-size: var(--text-sm);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
 .center {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
 }
-.fatted {
-  padding: 1rem;
-  margin: 1rem;
-}
-.border-rounded {
-  border-radius: 8px;
-}
-.back-light {
-  background-color: aliceblue;
-}
-.back-dark {
-  background-color: #302c2c;
-}
-.card-inline {
-  display: inline-block;
-  min-width: 80px;
-  margin: 0.75rem;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.card {
-  min-width: 80px;
-  padding: 10px;
-  margin: 1rem 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(245, 241, 241, 0.1);
-}
-
-.container {
-  display: flex;
-  margin: 1rem 0;
-  flex-wrap: wrap;
-  justify-content: space-around;
-}
 
 .auto-grow {
   flex: 1 1 auto;
 }
+
+/* --------------------------------------------------------------------------
+   4. Surfaces
+   -------------------------------------------------------------------------- */
+
+/* Generic elevated card surface, theme-aware in both light and dark mode */
+.surface-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+
+@media (max-width: 600px) {
+  .surface-card {
+    padding: var(--space-4);
+  }
+}
+
+/* Wraps a <table>/<v-table> so wide tables scroll horizontally on mobile
+   instead of overflowing or forcing the page to zoom out. */
+.table-wrapper {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrapper table,
+.table-wrapper .v-table {
+  min-width: 640px;
+}
+
+.actions-col {
+  white-space: nowrap;
+  width: 1%;
+}
+
+/* --------------------------------------------------------------------------
+   5. Status pills & chips
+   -------------------------------------------------------------------------- */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.status-pill.success {
+  background: rgba(var(--v-theme-success), 0.16);
+  color: var(--color-success);
+}
+
+.status-pill.error {
+  background: rgba(var(--v-theme-error), 0.16);
+  color: var(--color-error);
+}
+
+.status-pill.neutral {
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  color: var(--color-on-surface-variant);
+}
+
+/* --------------------------------------------------------------------------
+   6. Modals / drawers (see TheForm.vue, TheDialog.vue)
+   -------------------------------------------------------------------------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 6, 20, 0.5);
+  z-index: 998;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  animation: modal-fade var(--transition-base);
+}
+
+.modal-panel {
+  width: 100%;
+  max-height: min(85vh, 600px);
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: modal-pop var(--transition-base);
+}
+
+@keyframes modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   7. Legacy utility classes (kept for compatibility with older markup)
+   -------------------------------------------------------------------------- */
+.fatted {
+  padding: var(--space-4);
+  margin: var(--space-4);
+}
+
+.border-rounded {
+  border-radius: var(--radius-md);
+}
+
+.card-inline {
+  display: inline-block;
+  min-width: 80px;
+  margin: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.card {
+  min-width: 80px;
+  padding: var(--space-3);
+  margin: var(--space-4) 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.container {
+  display: flex;
+  margin: var(--space-4) 0;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: var(--space-4);
+}
+
 .btn {
   margin: 5px;
 }

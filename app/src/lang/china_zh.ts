@@ -62,6 +62,7 @@ const mapping: Record<string, string> = {
   cancel: '取消',
   saveChanges: '保存修改',
   createUser: '创建用户',
+  editUser: '编辑用户',
   activeAccount: '启用账户',
   roleManage: '角色管理',
   roleManageDescription: '管理角色和权限',

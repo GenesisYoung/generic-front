@@ -1,6 +1,6 @@
 <template>
-  <div id="dialog-main" max-width="480" v-if="store.globalDialogVisiblity">
-    <v-card :prepend-icon="icon" :title="title" class="content">
+  <div class="modal-backdrop" v-if="store.globalDialogVisiblity">
+    <v-card :prepend-icon="icon" :title="title" class="modal-panel dialog-card" rounded="lg">
       <v-card-text>
         {{ content }}
       </v-card-text>
@@ -52,16 +52,7 @@ const {
 </script>
 
 <style scoped>
-#dialog-main {
-  max-width: 400px;
-  min-width: 200px;
-  z-index: 999999;
-}
-.content {
-  /* padding-left: 1rem; */
-  /* padding-right: 1rem; */
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  border-radius: 0.5rem;
+.dialog-card {
+  width: min(400px, 92vw);
 }
 </style>
