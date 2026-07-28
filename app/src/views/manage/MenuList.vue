@@ -36,7 +36,7 @@ function formatIcon(iconName: string | undefined): string {
 const fetchMenus = async (page: number) => {
   currentPage.value = page
   const resp = await http.get(
-    `/admin/menus/fetch?page=${currentPage.value - 1}&size=${pageSize.value}`,
+    `manager/menu/fetch?page=${currentPage.value - 1}&size=${pageSize.value}`,
   )
   if (resp.data.content) {
     menus.value = resp.data.content
@@ -62,7 +62,7 @@ function cancel() {
 }
 
 async function submitData() {
-  const resp = await http.post('/admin/menus/save', formData.value)
+  const resp = await http.post('manager/menu/save', formData.value)
   if (resp.data.code != 200) {
     globalUtil.activeDialog(lan?.error, resp.data.message, undefined)
   }
@@ -75,7 +75,7 @@ async function remove(item: MenuItem) {
   if (!utilStore().globalDialogValue) {
     return
   }
-  const resp = await http.post('/admin/menus/delete', { deleteVal: [item.id] })
+  const resp = await http.post('manager/menu/delete', { deleteVal: [item.id] })
   if (resp.data.code != 200) {
     globalUtil.activeDialog(lan?.error, resp.data.message, undefined)
   }
