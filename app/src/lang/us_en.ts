@@ -95,6 +95,8 @@ const mapping: Record<string, string> = {
   menuIcon: 'Icon',
   menuRoute: 'Route',
   menuColor: 'Color',
+  parentId: 'Parent',
+  userBasicEdit: 'User Edit',
 }
 type Lan = typeof mapping
 export { mapping as lan }

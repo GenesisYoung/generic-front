@@ -113,6 +113,8 @@ const mapping: Record<string, string> = {
   menuIcon: '图标',
   menuRoute: '路由',
   menuColor: '颜色',
+  parentId: '父节点',
+  userBasicEdit: '用户修改',
 }
 type Lan = typeof mapping
 export { mapping as lan }

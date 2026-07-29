@@ -11,13 +11,21 @@ const lan: Lan | undefined = inject('lan')
 
 interface MenuItem {
   id: number | null
+  parentId: number | null
   titleKey: string
   icon: string
   route: string
   color: string
 }
 
-const emptyForm = (): MenuItem => ({ id: null, titleKey: '', icon: '', route: '', color: '' })
+const emptyForm = (): MenuItem => ({
+  id: null,
+  parentId: null,
+  titleKey: '',
+  icon: '',
+  route: '',
+  color: '',
+})
 
 const menus = ref<MenuItem[]>([])
 const currentPage = ref(1)
@@ -61,6 +69,10 @@ function cancel() {
   formData.value = emptyForm()
 }
 
+function updateColor(color: string) {
+  formData.value.color = color
+}
+
 async function submitData() {
   const resp = await http.post('manager/menu/save', formData.value)
   if (resp.data.code != 200) {
@@ -97,6 +109,7 @@ onMounted(async () => {
         <thead>
           <tr>
             <th>{{ lan?.menuId }}</th>
+            <th>{{ lan?.parentId }}</th>
             <th>{{ lan?.menuTitleKey }}</th>
             <th>{{ lan?.menuIcon }}</th>
             <th>{{ lan?.menuRoute }}</th>
@@ -107,6 +120,7 @@ onMounted(async () => {
         <tbody>
           <tr v-for="item in menus" :key="item.id ?? undefined">
             <td>{{ item.id }}</td>
+            <td>{{ item.parentId }}</td>
             <td>{{ item.titleKey }}</td>
             <td>
               <v-icon :color="item.color" :icon="formatIcon(item.icon)" class="mr-1" />
@@ -133,9 +147,25 @@ onMounted(async () => {
           <v-col>
             <h3 class="mb-2">{{ editing ? lan?.editMenu : lan?.addMenu }}</h3>
             <v-text-field :label="lan?.menuTitleKey" v-model="formData.titleKey" />
+            <v-text-field :label="lan?.parentId" v-model="formData.parentId" />
             <v-text-field :label="lan?.menuIcon" v-model="formData.icon" />
             <v-text-field :label="lan?.menuRoute" v-model="formData.route" />
             <v-text-field :label="lan?.menuColor" v-model="formData.color" />
+            <div class="color-select-bar mb-2">
+              <v-chip color="indigo" class="mr-2" @click="updateColor('indigo')">indigo</v-chip
+              ><v-chip
+                color="deep-purple-darken-1"
+                class="mr-2"
+                @click="updateColor('deep-purple-darken-1')"
+                >deep-purple-darken-1</v-chip
+              >
+              <v-chip color="blue-darken-1" class="mr-2" @click="updateColor('blue-darken-1')"
+                >blue-darken-1</v-chip
+              >
+              <v-chip color="cyan-darken-1" class="mr-2" @click="updateColor('cyan-darken-1')"
+                >cyan-darken-1</v-chip
+              >
+            </div>
             <v-btn :text="lan?.submit" color="green" class="mr-2" @click="submitData" />
             <v-btn :text="lan?.cancel" color="red" @click="cancel" />
           </v-col>

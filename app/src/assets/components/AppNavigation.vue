@@ -3,6 +3,8 @@
     <v-list nav density="comfortable" class="pa-2">
       <v-list-item
         v-for="item in menu"
+        :id="item.id"
+        :parentId="item.parentId"
         :key="item.route"
         :to="item.route"
         rounded="lg"
