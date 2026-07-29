@@ -1,19 +1,12 @@
 <template>
   <v-navigation-drawer v-model="drawer" :temporary="mobile" :permanent="!mobile" width="260">
     <v-list nav density="comfortable" class="pa-2">
-      <v-list-item
+      <AppNavigationItem
         v-for="item in menu"
-        :key="item.route"
-        :to="item.route"
-        rounded="lg"
-        class="mb-1"
-        @click="mobile && (drawer = false)"
-      >
-        <template #prepend>
-          <v-icon :color="item.color" :icon="formatIcon(item.icon)" />
-        </template>
-        <v-list-item-title>{{ lang?.[item.titleKey] }}</v-list-item-title>
-      </v-list-item>
+        :key="item.id"
+        :item="item"
+        @navigate="mobile && (drawer = false)"
+      />
     </v-list>
   </v-navigation-drawer>
 </template>
@@ -21,10 +14,9 @@
 <script setup lang="ts">
 import http from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
-import { inject, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useDisplay } from 'vuetify'
-
-type Lan = Record<string, string>
+import AppNavigationItem from './AppNavigationItem.vue'
 class Menu {
   id: number
   titleKey: string // key to look up in your lang object
@@ -55,15 +47,6 @@ class Menu {
 const drawer = defineModel<boolean>({ default: false })
 const { mobile } = useDisplay()
 const menu = ref<Menu[]>([])
-const lang: Lan | undefined = inject('lan')
-
-function formatIcon(iconName: string | null): string {
-  if (!iconName) return ''
-  // Already kebab-case with prefix? Use as-is.
-  if (iconName.startsWith('mdi-')) return iconName
-  // Convert camelCase ("mdiHomeCircle") to kebab-case ("mdi-home-circle")
-  return iconName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
-}
 
 async function fetchNavMenu() {
   const auth = useAuthStore()
