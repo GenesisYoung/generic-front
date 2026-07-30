@@ -118,6 +118,10 @@ const mapping: Record<string, string> = {
   userPermissionAllocation: '权限分配',
   throughPermission: '经由权限分配',
   throughUser: '经由用户分配',
+  search: '查询',
+  reset: '重置',
+  navTitleKey: '导航标题键',
+  permissionValue: '权限值',
 }
 type Lan = typeof mapping
 export { mapping as lan }
