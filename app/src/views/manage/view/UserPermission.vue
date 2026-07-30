@@ -27,7 +27,6 @@ const pageCount = ref(0)
 const filter = ref({
   uName: '',
   navName: '',
-  pName: '',
   route: '',
 })
 
@@ -41,7 +40,7 @@ const fetchData = async (page: number) => {
       filter: {
         uName: filter.value.uName.trim() || null,
         navName: filter.value.navName.trim() || null,
-        pName: filter.value.pName.trim() || null,
+        pName: null,
         route: filter.value.route.trim() || null,
       },
     })
@@ -57,7 +56,7 @@ function search() {
 }
 
 function resetFilter() {
-  filter.value = { uName: '', navName: '', pName: '', route: '' }
+  filter.value = { uName: '', navName: '', route: '' }
   fetchData(1)
 }
 
@@ -88,15 +87,6 @@ onMounted(async () => {
         @keyup.enter="search"
       />
       <v-text-field
-        v-model="filter.pName"
-        :label="lan?.permissionName"
-        hide-details
-        density="compact"
-        class="auto-grow"
-        style="min-width: 160px; max-width: 240px"
-        @keyup.enter="search"
-      />
-      <v-text-field
         v-model="filter.route"
         :label="lan?.menuRoute"
         hide-details
@@ -115,8 +105,6 @@ onMounted(async () => {
             <th>{{ lan?.userName }}</th>
             <th>{{ lan?.navTitleKey }}</th>
             <th>{{ lan?.menuRoute }}</th>
-            <th>{{ lan?.permissionName }}</th>
-            <th>{{ lan?.permissionValue }}</th>
           </tr>
         </thead>
         <tbody>
@@ -124,8 +112,6 @@ onMounted(async () => {
             <td>{{ item.uName }}</td>
             <td>{{ item.navKey }}</td>
             <td>{{ item.route }}</td>
-            <td>{{ item.pName }}</td>
-            <td>{{ item.pVal }}</td>
           </tr>
         </tbody>
       </v-table>
