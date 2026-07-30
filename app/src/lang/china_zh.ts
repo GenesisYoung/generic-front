@@ -122,6 +122,18 @@ const mapping: Record<string, string> = {
   reset: '重置',
   navTitleKey: '导航标题键',
   permissionValue: '权限值',
+  menus: '菜单',
+  filterMenus: '筛选菜单…',
+  selectMenuPrompt: '请从左侧选择一个菜单以管理权限。',
+  selectUserPrompt: '请选择一个用户以管理其在此菜单下的权限。',
+  granted: '已授权',
+  notGranted: '未授权',
+  all: '全部',
+  accessSummary: '已获权限',
+  selectUser: '选择用户',
+  toggleUserAccessDesc: '切换哪些用户可以访问该菜单。',
+  togglePermissionAccessDesc: '切换该用户在此菜单下拥有的权限。',
+  searchRoster: '搜索…',
 }
 type Lan = typeof mapping
 export { mapping as lan }

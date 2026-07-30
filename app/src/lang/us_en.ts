@@ -104,6 +104,18 @@ const mapping: Record<string, string> = {
   reset: 'Reset',
   navTitleKey: 'Navigation Title Key',
   permissionValue: 'Permission Value',
+  menus: 'Menus',
+  filterMenus: 'Filter menus…',
+  selectMenuPrompt: 'Select a menu from the left to manage access.',
+  selectUserPrompt: 'Choose a user to manage their permissions for this menu.',
+  granted: 'Granted',
+  notGranted: 'Not granted',
+  all: 'All',
+  accessSummary: 'have access',
+  selectUser: 'Select user',
+  toggleUserAccessDesc: 'Toggle which users can access this menu.',
+  togglePermissionAccessDesc: "Toggle which permissions this user holds for this menu.",
+  searchRoster: 'Search…',
 }
 type Lan = typeof mapping
 export { mapping as lan }
