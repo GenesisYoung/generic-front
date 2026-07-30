@@ -35,7 +35,6 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
   const tabs = useTabsStore()
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    console.log('Access denied. Redirecting to login.')
     return { name: 'login' }
   }
 

@@ -95,6 +95,7 @@ async function remove(item: MenuItem) {
 }
 
 onMounted(async () => {
+  currentPage.value = 1
   await fetchMenus(currentPage.value)
 })
 </script>

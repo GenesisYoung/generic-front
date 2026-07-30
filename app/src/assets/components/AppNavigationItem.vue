@@ -1,11 +1,16 @@
 <template>
-  <v-list-group v-if="item.children && item.children.length" :value="item.id">
+  <v-list-group
+    v-if="item.children && item.children.length"
+    :value="item.id"
+    :expand-icon="formatIcon('mdiArrowDownDropCircle')"
+    :collapse-icon="formatIcon('mdiArrowUpDropCircle')"
+  >
     <template #activator="{ props: activatorProps }">
       <v-list-item v-bind="activatorProps" rounded="lg" class="mb-1">
         <template #prepend>
           <v-icon :color="item.color" :icon="formatIcon(item.icon)" />
         </template>
-        <v-list-item-title>{{ lang?.[item.titleKey] }}</v-list-item-title>
+        <v-list-item-title class="title">{{ lang?.[item.titleKey] }}</v-list-item-title>
       </v-list-item>
     </template>
 
@@ -21,7 +26,7 @@
     <template #prepend>
       <v-icon :color="item.color" :icon="formatIcon(item.icon)" />
     </template>
-    <v-list-item-title>{{ lang?.[item.titleKey] }}</v-list-item-title>
+    <v-list-item-title class="title">{{ lang?.[item.titleKey] }}</v-list-item-title>
   </v-list-item>
 </template>
 
@@ -51,3 +56,10 @@ function formatIcon(iconName: string | null): string {
   return iconName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
 }
 </script>
+
+<style scoped>
+.title {
+  user-select: none;
+  cursor: pointer;
+}
+</style>

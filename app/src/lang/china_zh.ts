@@ -115,6 +115,9 @@ const mapping: Record<string, string> = {
   menuColor: '颜色',
   parentId: '父节点',
   userBasicEdit: '用户修改',
+  userPermissionAllocation: '权限分配',
+  throughPermission: '经由权限分配',
+  throughUser: '经由用户分配',
 }
 type Lan = typeof mapping
 export { mapping as lan }
