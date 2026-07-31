@@ -134,6 +134,12 @@ const mapping: Record<string, string> = {
   toggleUserAccessDesc: '切换哪些用户可以访问该菜单。',
   togglePermissionAccessDesc: '切换该用户在此菜单下拥有的权限。',
   searchRoster: '搜索…',
+  manageRegistrations: '管理权限',
+  backToApprovals: '返回',
+  registered: '已注册',
+  notRegistered: '未注册',
+  toggleRegistrationDesc: '切换哪些权限可用于此菜单。',
+  registeredSummary: '已注册',
 }
 type Lan = typeof mapping
 export { mapping as lan }

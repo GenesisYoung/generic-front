@@ -28,6 +28,13 @@ interface PermissionAccessItem {
   granted: boolean
 }
 
+interface PermissionRegistrationItem {
+  id: number
+  permissionName: string
+  val: number
+  registered: boolean
+}
+
 const menus = ref<MenuItem[]>([])
 const menuSearch = ref('')
 const currentMenu = ref<MenuItem | null>(null)
@@ -35,8 +42,14 @@ const currentMenu = ref<MenuItem | null>(null)
 const users = ref<UserOption[]>([])
 const currentUser = ref<UserOption | null>(null)
 
+const viewMode = ref<'approve' | 'register'>('approve')
+
 const roster = ref<PermissionAccessItem[]>([])
 const rosterLoading = ref(false)
+
+const registrations = ref<PermissionRegistrationItem[]>([])
+const registrationsLoading = ref(false)
+
 const rosterSearch = ref('')
 const rosterFilter = ref<'all' | 'on' | 'off'>('all')
 
@@ -58,7 +71,18 @@ const filteredRoster = computed(() => {
   })
 })
 
+const filteredRegistrations = computed(() => {
+  const q = rosterSearch.value.trim().toLowerCase()
+  return registrations.value.filter((p) => {
+    const matchesQuery = !q || p.permissionName.toLowerCase().includes(q)
+    const matchesFilter =
+      rosterFilter.value === 'all' || (rosterFilter.value === 'on') === p.registered
+    return matchesQuery && matchesFilter
+  })
+})
+
 const grantedCount = computed(() => roster.value.filter((p) => p.granted).length)
+const registeredCount = computed(() => registrations.value.filter((p) => p.registered).length)
 
 async function fetchMenus() {
   const resp = await http.get('manager/menu/fetch?page=0&size=200')
@@ -86,17 +110,42 @@ async function fetchRoster() {
   }
 }
 
-async function selectMenu(menu: MenuItem) {
-  currentMenu.value = menu
+async function fetchRegistrations() {
+  if (!currentMenu.value) {
+    registrations.value = []
+    return
+  }
+  registrationsLoading.value = true
+  try {
+    const resp = await http.get(`permission/menu/registration?navId=${currentMenu.value.id}`)
+    registrations.value = resp.data ?? []
+  } finally {
+    registrationsLoading.value = false
+  }
+}
+
+async function refreshRoster() {
   rosterFilter.value = 'all'
   rosterSearch.value = ''
-  await fetchRoster()
+  if (viewMode.value === 'register') {
+    await fetchRegistrations()
+  } else {
+    await fetchRoster()
+  }
+}
+
+async function selectMenu(menu: MenuItem) {
+  currentMenu.value = menu
+  await refreshRoster()
 }
 
 async function selectUser() {
-  rosterFilter.value = 'all'
-  rosterSearch.value = ''
-  await fetchRoster()
+  await refreshRoster()
+}
+
+async function toggleViewMode() {
+  viewMode.value = viewMode.value === 'approve' ? 'register' : 'approve'
+  await refreshRoster()
 }
 
 async function togglePermission(perm: PermissionAccessItem) {
@@ -110,6 +159,20 @@ async function togglePermission(perm: PermissionAccessItem) {
   })
   if (resp.data.code != 200) {
     perm.granted = !next
+    globalUtil.activeDialog(lan?.error, resp.data.message, undefined)
+  }
+}
+
+async function toggleRegistration(perm: PermissionRegistrationItem) {
+  const next = !perm.registered
+  perm.registered = next
+  const resp = await http.post('permission/manipulate/registration', {
+    navId: currentMenu.value?.id,
+    permissionId: perm.id,
+    registered: next,
+  })
+  if (resp.data.code != 200) {
+    perm.registered = !next
     globalUtil.activeDialog(lan?.error, resp.data.message, undefined)
   }
 }
@@ -155,8 +218,19 @@ onMounted(async () => {
             <div class="roster-title-row">
               <h2>{{ currentMenu.titleKey }}</h2>
               <v-chip size="small" variant="tonal">{{ currentMenu.route }}</v-chip>
+              <v-spacer />
+              <v-btn
+                size="small"
+                variant="tonal"
+                :prepend-icon="viewMode === 'approve' ? 'mdi-cog-outline' : 'mdi-arrow-left'"
+                @click="toggleViewMode"
+              >
+                {{ viewMode === 'approve' ? lan?.manageRegistrations : lan?.backToApprovals }}
+              </v-btn>
             </div>
+
             <v-autocomplete
+              v-if="viewMode === 'approve'"
               v-model="currentUser"
               :items="users"
               item-title="name"
@@ -177,29 +251,36 @@ onMounted(async () => {
               </template>
             </v-autocomplete>
 
-            <template v-if="currentUser">
-              <p class="roster-desc">{{ lan?.togglePermissionAccessDesc }}</p>
-              <div class="roster-controls">
-                <v-text-field
-                  v-model="rosterSearch"
-                  :placeholder="lan?.searchRoster"
-                  prepend-inner-icon="mdi-magnify"
-                  hide-details
-                  density="compact"
-                  variant="outlined"
-                  class="roster-search"
-                />
-                <v-btn-toggle v-model="rosterFilter" mandatory density="compact" variant="outlined">
-                  <v-btn value="all" size="small">{{ lan?.all }}</v-btn>
-                  <v-btn value="on" size="small">{{ lan?.granted }}</v-btn>
-                  <v-btn value="off" size="small">{{ lan?.notGranted }}</v-btn>
-                </v-btn-toggle>
-              </div>
-            </template>
+            <p class="roster-desc">
+              {{ viewMode === 'approve' ? lan?.togglePermissionAccessDesc : lan?.toggleRegistrationDesc }}
+            </p>
+
+            <div v-if="viewMode === 'register' || currentUser" class="roster-controls">
+              <v-text-field
+                v-model="rosterSearch"
+                :placeholder="lan?.searchRoster"
+                prepend-inner-icon="mdi-magnify"
+                hide-details
+                density="compact"
+                variant="outlined"
+                class="roster-search"
+              />
+              <v-btn-toggle v-model="rosterFilter" mandatory density="compact" variant="outlined">
+                <v-btn value="all" size="small">{{ lan?.all }}</v-btn>
+                <v-btn value="on" size="small">
+                  {{ viewMode === 'approve' ? lan?.granted : lan?.registered }}
+                </v-btn>
+                <v-btn value="off" size="small">
+                  {{ viewMode === 'approve' ? lan?.notGranted : lan?.notRegistered }}
+                </v-btn>
+              </v-btn-toggle>
+            </div>
           </div>
 
-          <article v-if="!currentUser" class="center py-8">{{ lan?.selectUserPrompt }}</article>
-          <template v-else>
+          <article v-if="viewMode === 'approve' && !currentUser" class="center py-8">
+            {{ lan?.selectUserPrompt }}
+          </article>
+          <template v-else-if="viewMode === 'approve'">
             <v-list v-if="!rosterLoading && filteredRoster.length > 0" density="compact">
               <v-list-item v-for="perm in filteredRoster" :key="perm.id">
                 <template #prepend>
@@ -230,6 +311,39 @@ onMounted(async () => {
             <div v-if="!rosterLoading && roster.length > 0" class="roster-foot">
               <span class="mono">{{ grantedCount }} / {{ roster.length }}</span>
               {{ lan?.accessSummary }}
+            </div>
+          </template>
+          <template v-else>
+            <v-list v-if="!registrationsLoading && filteredRegistrations.length > 0" density="compact">
+              <v-list-item v-for="perm in filteredRegistrations" :key="perm.id">
+                <template #prepend>
+                  <v-icon icon="mdi-link-variant" class="mr-1" />
+                </template>
+                <v-list-item-title class="mono">{{ perm.permissionName }}</v-list-item-title>
+                <v-list-item-subtitle
+                  >{{ lan?.permissionValue }}: {{ perm.val }}</v-list-item-subtitle
+                >
+                <template #append>
+                  <span class="status-pill mr-2" :class="perm.registered ? 'success' : 'neutral'">
+                    {{ perm.registered ? lan?.registered : lan?.notRegistered }}
+                  </span>
+                  <v-switch
+                    :model-value="perm.registered"
+                    color="success"
+                    hide-details
+                    density="compact"
+                    @update:model-value="toggleRegistration(perm)"
+                  />
+                </template>
+              </v-list-item>
+            </v-list>
+            <article v-else class="center py-8">
+              {{ registrationsLoading ? lan?.loading : lan?.noAvaiableData }}
+            </article>
+
+            <div v-if="!registrationsLoading && registrations.length > 0" class="roster-foot">
+              <span class="mono">{{ registeredCount }} / {{ registrations.length }}</span>
+              {{ lan?.registeredSummary }}
             </div>
           </template>
         </template>
