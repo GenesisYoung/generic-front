@@ -78,7 +78,7 @@ async function fetchRoster() {
   rosterLoading.value = true
   try {
     const resp = await http.get(
-      `permission/menu/${currentMenu.value.id}/permissions?userId=${currentUser.value.id}`,
+      `permission/menu/permission?navId=${currentMenu.value.id}&userId=${currentUser.value.id}`,
     )
     roster.value = resp.data ?? []
   } finally {
@@ -169,7 +169,11 @@ onMounted(async () => {
               @update:model-value="selectUser"
             >
               <template #item="{ props, item }">
-                <v-list-item v-bind="props" :title="item.displayName || item.name" :subtitle="item.name" />
+                <v-list-item
+                  v-bind="props"
+                  :title="item.displayName || item.name"
+                  :subtitle="item.name"
+                />
               </template>
             </v-autocomplete>
 
@@ -202,7 +206,9 @@ onMounted(async () => {
                   <v-icon icon="mdi-key-outline" class="mr-1" />
                 </template>
                 <v-list-item-title class="mono">{{ perm.permissionName }}</v-list-item-title>
-                <v-list-item-subtitle>{{ lan?.permissionValue }}: {{ perm.val }}</v-list-item-subtitle>
+                <v-list-item-subtitle
+                  >{{ lan?.permissionValue }}: {{ perm.val }}</v-list-item-subtitle
+                >
                 <template #append>
                   <span class="status-pill mr-2" :class="perm.granted ? 'success' : 'neutral'">
                     {{ perm.granted ? lan?.granted : lan?.notGranted }}
