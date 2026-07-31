@@ -116,6 +116,12 @@ const mapping: Record<string, string> = {
   toggleUserAccessDesc: 'Toggle which users can access this menu.',
   togglePermissionAccessDesc: "Toggle which permissions this user holds for this menu.",
   searchRoster: 'Search…',
+  manageRegistrations: 'Manage Permissions',
+  backToApprovals: 'Back',
+  registered: 'Registered',
+  notRegistered: 'Not registered',
+  toggleRegistrationDesc: 'Toggle which permissions are available under this menu.',
+  registeredSummary: 'registered',
 }
 type Lan = typeof mapping
 export { mapping as lan }
