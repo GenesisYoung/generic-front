@@ -1,4 +1,11 @@
 <script setup lang="ts">
+/**
+ * Navigation menu management (child tab of /permission/management).
+ *
+ * Paginated CRUD table over the sidebar menu items stored in the backend.
+ * A single modal form (TheForm) covers both add and edit; deletion asks
+ * for confirmation via the global dialog.
+ */
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
@@ -6,6 +13,7 @@ import utilStore from '@/stores/utils'
 import { globalUtil } from '@/utils/util'
 import { inject, onMounted, ref } from 'vue'
 
+// Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lan: Lan | undefined = inject('lan')
 
@@ -35,6 +43,7 @@ const showForm = ref(false)
 const editing = ref(false)
 const formData = ref<MenuItem>(emptyForm())
 
+/** Normalises an icon name so it always carries the 'mdi-' prefix. */
 function formatIcon(iconName: string | undefined): string {
   if (!iconName) return ''
   if (iconName.startsWith('mdi-')) return iconName
@@ -73,6 +82,7 @@ function updateColor(color: string) {
   formData.value.color = color
 }
 
+/** Saves the form (create or update — the backend decides by id). */
 async function submitData() {
   const resp = await http.post('manager/menu/save', formData.value)
   if (resp.data.code != 200) {
@@ -82,10 +92,11 @@ async function submitData() {
   await fetchMenus(currentPage.value)
 }
 
+/** Deletes a menu item after a confirm dialog. */
 async function remove(item: MenuItem) {
   await globalUtil.activeDialog(lan?.deleteMenu, lan?.deleteMenuContent, undefined, 2)
   if (!utilStore().globalDialogValue) {
-    return
+    return // user pressed cancel
   }
   const resp = await http.post('manager/menu/delete', { deleteVal: [item.id] })
   if (resp.data.code != 200) {

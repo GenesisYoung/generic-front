@@ -62,10 +62,21 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Manager dashboard: KPI cards, a revenue bar chart, order status /
+ * platform distribution pie charts, and a recent-orders table.
+ *
+ * NOTE: all figures and chart data are hard-coded mock values for now;
+ * replace them with backend API calls when the reporting module lands.
+ */
 import { inject, onMounted } from 'vue'
 import * as echarts from 'echarts'
+
+// Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lang: Lan = inject('lan') as Lan
+
+// ── Mock KPI data ────────────────────────────────────────────────────────────
 const totalRevenue = 12345.67
 const total_revenue_desc = '▲ 12% vs last month'
 const orderNumberToday = 95
@@ -98,6 +109,11 @@ const orderList = [
     orderDate: '2024-06-01',
   },
 ]
+/**
+ * Initialises all three ECharts instances (weekly revenue bar, order status
+ * donut, platform distribution pie). Must run after mount so the target
+ * <div> elements exist in the DOM.
+ */
 function initRevenueChart() {
   const revenueChart = echarts.init(document.getElementById('revenue-chart') as HTMLElement)
   revenueChart.setOption({

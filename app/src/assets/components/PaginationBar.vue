@@ -11,6 +11,10 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Thin wrapper around v-pagination shared by all list pages.
+ * Controlled component: emits `update:currentPage`, the parent refetches.
+ */
 const props = defineProps({
   currentPage: {
     type: Number,

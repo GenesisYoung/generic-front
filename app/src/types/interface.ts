@@ -1,3 +1,4 @@
+/** Shared UI / API contract types used across the app. */
 import type { Component } from 'vue'
 // Define the structure of an API response
 interface APIResponse<T> {
@@ -18,11 +19,12 @@ interface SelectItem {
   value: number | string
 }
 
+/** One tab in the multi-tab workspace (see stores/tabs.ts + TabMenu.vue). */
 interface Tab {
-  id: string
-  title: string
-  component: Component
-  router: string
+  id: string // unique key — the route's fullPath
+  title: string // label shown on the tab (i18n-resolved)
+  component: Component // lazy component rendered for this tab
+  router: string // route to navigate to when the tab is activated
 }
 
 type ISODateString = string // ISO 8601 formatted date string

@@ -33,8 +33,16 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * The single global dialog, mounted once in App.vue and driven by the
+ * utils store. Open it via globalUtil.activeDialog() — mode 1 shows only a
+ * confirm button; mode 2 shows cancel/confirm and writes the choice to
+ * store.globalDialogValue (awaited by the caller).
+ */
 import utilStore from '@/stores/utils'
 import { inject } from 'vue'
+
+// Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
 const store = utilStore()

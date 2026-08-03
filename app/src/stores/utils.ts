@@ -1,3 +1,8 @@
+/**
+ * UI utility store: holds the reactive state of the single global dialog
+ * (rendered by TheDialog.vue). Open it via `globalUtil.activeDialog()` in
+ * utils/util.ts rather than mutating this state directly.
+ */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 

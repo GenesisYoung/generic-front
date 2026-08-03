@@ -1,3 +1,10 @@
+/**
+ * Root router (hash history, so no server-side routing config is needed).
+ *
+ * A global beforeEach guard enforces authentication for routes flagged with
+ * `meta.requiresAuth`, redirects logged-in users away from /login, and opens
+ * every visited route as a tab in the multi-tab workspace.
+ */
 import { lan } from '@/lang/china_zh'
 import { useAuthStore } from '@/stores/auth'
 import { useTabsStore } from '@/stores/tabs'
@@ -42,6 +49,8 @@ router.beforeEach((to) => {
   if (to.name === 'login' && auth.isAuthenticated) {
     return { name: 'home' }
   }
+  // Register the destination as a workspace tab (title resolved via i18n,
+  // falling back to the route name / path).
   const newTab: Tab = {
     id: to.fullPath,
     title: mapping[to.name as string] || (to.name as string) || to.fullPath,

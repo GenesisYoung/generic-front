@@ -1,8 +1,20 @@
 <script lang="ts" setup>
+/**
+ * User-centric allocation view ("by user" angle).
+ *
+ * Layout: a left rail listing navigation menus; selecting one loads the
+ * full user roster for that menu into the right panel, where each user's
+ * access can be granted/revoked with a switch.
+ *
+ * Toggles are optimistic: the switch flips immediately and is rolled back
+ * with an error dialog if the backend rejects the change.
+ * Sibling view: ThroughPermission.vue (same data, permission-centric).
+ */
 import http from '@/api/http'
 import { globalUtil } from '@/utils/util'
 import { computed, inject, onMounted, ref } from 'vue'
 
+// Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lan: Lan | undefined = inject('lan')
 
@@ -23,14 +35,16 @@ interface UserAccessItem {
   granted: boolean
 }
 
+// ── Left rail: menu list ─────────────────────────────────────────────────────
 const menus = ref<MenuItem[]>([])
 const menuSearch = ref('')
 const currentMenu = ref<MenuItem | null>(null)
 
+// ── Right panel: user roster for the selected menu ───────────────────────────
 const roster = ref<UserAccessItem[]>([])
 const rosterLoading = ref(false)
 const rosterSearch = ref('')
-const rosterFilter = ref<'all' | 'on' | 'off'>('all')
+const rosterFilter = ref<'all' | 'on' | 'off'>('all') // granted / not-granted filter
 
 const filteredMenus = computed(() => {
   const q = menuSearch.value.trim().toLowerCase()
@@ -58,6 +72,7 @@ async function fetchMenus() {
   menus.value = resp.data.content ?? []
 }
 
+/** Selects a menu, resets filters, and loads its user roster. */
 async function selectMenu(menu: MenuItem) {
   currentMenu.value = menu
   rosterFilter.value = 'all'
@@ -71,6 +86,10 @@ async function selectMenu(menu: MenuItem) {
   }
 }
 
+/**
+ * Grants/revokes menu access for one user.
+ * Optimistic update: flip the UI first, roll back on backend failure.
+ */
 async function toggleUser(user: UserAccessItem) {
   const next = !user.granted
   user.granted = next

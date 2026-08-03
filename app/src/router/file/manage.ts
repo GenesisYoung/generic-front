@@ -1,8 +1,17 @@
+/**
+ * Route definitions for the management module (/manage/*, /user/permission/*,
+ * /permission/management/*). Imported and spread into the root router.
+ *
+ * Every route is lazy-loaded (dynamic import) so each management page is
+ * split into its own chunk. `meta.permission` declares the permission code
+ * required to access the route (checked against the user's identity).
+ */
 import { Permission } from '@/assets/config/auth'
 
 type Route = import('vue-router').RouteRecordRaw
 
 const manage: Route[] = [
+  // User CRUD table — ROOT only.
   {
     path: '/manage/users',
     name: 'userManagement',
@@ -12,6 +21,9 @@ const manage: Route[] = [
       permission: Permission.ROOT,
     },
   },
+  // Permission allocation — two child views offering the same data from
+  // opposite angles: "by user" (what can this user do?) and "by permission"
+  // (who holds this permission?). Defaults to the by-user view.
   {
     path: '/user/permission/allocation',
     name: 'userPermissionAllocation',
@@ -39,6 +51,8 @@ const manage: Route[] = [
       },
     ],
   },
+  // Permission management console — child tabs for actions, permissions,
+  // and navigation menus. Defaults to the permission list. ROOT only.
   {
     path: '/permission/management',
     name: 'roleManagement',

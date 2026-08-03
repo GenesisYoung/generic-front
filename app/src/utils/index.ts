@@ -1,11 +1,22 @@
+/** General-purpose helpers shared across views. */
 import type { ISODateString } from '@/types/interface'
 import type { PaginationRequest, PaginationResponse } from '@/types/interface'
 import axios from 'axios'
-// Convert a Date object to an ISO date string (YYYY-MM-DD)
+
+/** Converts a Date object to an ISO-8601 date string. */
 function toISODateString(date: Date): ISODateString {
   return date.toISOString() as ISODateString
 }
-// Placeholder function for requesting a new page of data
+
+/**
+ * Generic paginated GET helper: fetches one page from `paginationRequest.api`
+ * and normalises the result into a PaginationResponse. The total row count is
+ * read from the `x-total-count` response header. On error, returns a response
+ * with `success: false` and an empty data array (never throws).
+ *
+ * NOTE: uses the raw axios instance, so no JWT header is attached — switch to
+ * the shared http instance if the target endpoint requires authentication.
+ */
 async function requestNewPage(
   paginationRequest: PaginationRequest,
 ): Promise<PaginationResponse<unknown>> {

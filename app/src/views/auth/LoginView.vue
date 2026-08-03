@@ -1,5 +1,10 @@
 <!-- src/views/auth/LoginView.vue -->
 <script setup lang="ts">
+/**
+ * Login page (/login). Delegates the actual authentication to the auth
+ * store; on success the store redirects to home. Standalone full-screen
+ * layout (own <v-app>), since it renders outside the MainEntry shell.
+ */
 import { useAuthStore } from '@/stores/auth'
 import { ref } from 'vue'
 
@@ -10,6 +15,7 @@ const password = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 
+/** Submits the credentials; shows the backend message on failure. */
 async function handleLogin() {
   if (!username.value || !password.value) return
 

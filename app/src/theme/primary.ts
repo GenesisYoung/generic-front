@@ -1,5 +1,9 @@
+/**
+ * The app's primary color themes (violet palette). Registered in main.ts;
+ * dark is the default. Colors follow the Tailwind violet scale
+ * (primary: #7C3AED dark / #6D28D9 light).
+ */
 import type Theme from './theme'
-// your interface path
 
 const lightTheme: Theme = {
   dark: false,

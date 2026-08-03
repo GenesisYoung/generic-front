@@ -1,7 +1,18 @@
+/**
+ * Shared Axios instance for all backend calls.
+ *
+ * Responsibilities:
+ * - attach the JWT access token (or the refresh token on refresh calls)
+ * - proactively rotate the refresh token when it is close to expiring
+ * - on an auth failure, silently refresh the access token and retry the
+ *   original request once, queueing concurrent failures during the refresh
+ */
 import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
+    // Marks a request that has already been retried after a token refresh,
+    // so a second failure is not retried again (prevents infinite loops).
     _retried?: boolean
   }
 }
@@ -44,6 +55,8 @@ let waitingQueue: Array<(token: string) => void> = []
 
 http.interceptors.response.use(
   (resp) => {
+    // The backend reports the refresh token's remaining lifetime on every
+    // response; rotate proactively when less than 24h remain.
     const expires = Number.parseInt(resp.headers['Refresh-Token-Remaining'])
     if (expires < 1000 * 60 * 60 * 24) {
       getAuthStore()?.refresh()

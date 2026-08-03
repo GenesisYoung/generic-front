@@ -1,5 +1,11 @@
-type color = string
-type opacity = number
+/**
+ * Typed contract for a Vuetify theme object. Mirrors the color and CSS
+ * variable tokens Vuetify expects, so every theme in this folder is
+ * guaranteed to define the complete token set. See primary.ts for the
+ * concrete light/dark themes registered in main.ts.
+ */
+type color = string // hex color string, e.g. '#7C3AED'
+type opacity = number // 0–1
 export default interface Theme {
   dark: boolean
   colors: {

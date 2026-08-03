@@ -1,10 +1,20 @@
 <script setup lang="ts">
+/**
+ * Permission list management (child tab of /permission/management).
+ *
+ * Permission codes use a dotted "root.child" convention (e.g. "user.read").
+ * The flat page returned by the backend is regrouped client-side into a
+ * two-level tree: `permissionRoot` holds the distinct root segments and
+ * `permission` maps each root to its child entries, rendered as
+ * checkbox-selectable v-list-groups.
+ */
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
 import { globalUtil } from '@/utils/util'
 import { inject, onMounted, ref } from 'vue'
 
+// Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lan: Lan | undefined = inject('lan')
 const currentPage = ref(1)
@@ -29,6 +39,10 @@ const formData = ref<{
   permissionCode: '',
   val: null,
 })
+/**
+ * Loads one page of permissions and rebuilds the root → children grouping
+ * by splitting each permissionCode on the first '.'.
+ */
 const fetchPermissions = async (page: number) => {
   currentPage.value = page
   permissionRoot.value = new Set<string>()
@@ -83,6 +97,11 @@ function cancel() {
   showForm.value = false
   formData.value = { id: null, permissionCode: '', val: null }
 }
+/**
+ * Deletes the selected entries. Selection values are mixed: child rows use
+ * numeric ids, root group rows use their string root code — so they are
+ * split and sent to two different delete endpoints.
+ */
 async function remove() {
   const numbers = ref([])
   const strings = ref([])

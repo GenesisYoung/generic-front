@@ -1,8 +1,22 @@
 <script lang="ts" setup>
+/**
+ * Permission-centric allocation view ("by permission" angle).
+ *
+ * Layout: a left rail listing navigation menus, and a right roster panel
+ * with two modes toggled by `viewMode`:
+ *  - 'approve'  — pick a menu + user, then grant/revoke individual
+ *                 permissions for that user on that menu.
+ *  - 'register' — pick a menu only, then register/unregister which
+ *                 permissions are relevant to that menu at all.
+ *
+ * Toggles are optimistic: the switch flips immediately and is rolled back
+ * with an error dialog if the backend rejects the change.
+ */
 import http from '@/api/http'
 import { globalUtil } from '@/utils/util'
 import { computed, inject, onMounted, ref } from 'vue'
 
+// Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lan: Lan | undefined = inject('lan')
 
@@ -33,21 +47,26 @@ interface PermissionRegistrationItem {
   registered: boolean
 }
 
+// ── Left rail: menu list ─────────────────────────────────────────────────────
 const menus = ref<MenuItem[]>([])
 const menuSearch = ref('')
 const currentMenu = ref<MenuItem | null>(null)
 
+// ── User picker (approve mode only) ──────────────────────────────────────────
 const users = ref<UserOption[]>([])
 const currentUser = ref<UserOption | null>(null)
 
+// Which roster the right panel shows: user grants or menu registrations.
 const viewMode = ref<'approve' | 'register'>('approve')
 
-const roster = ref<PermissionAccessItem[]>([])
+// ── Roster data (per selected menu / user) ───────────────────────────────────
+const roster = ref<PermissionAccessItem[]>([]) // approve mode
 const rosterLoading = ref(false)
 
-const registrations = ref<PermissionRegistrationItem[]>([])
+const registrations = ref<PermissionRegistrationItem[]>([]) // register mode
 const registrationsLoading = ref(false)
 
+// Shared search box + granted/registered filter for both roster modes.
 const rosterSearch = ref('')
 const rosterFilter = ref<'all' | 'on' | 'off'>('all')
 
@@ -63,6 +82,7 @@ const filteredRoster = computed(() => {
   const q = rosterSearch.value.trim().toLowerCase()
   return roster.value.filter((p) => {
     const matchesQuery = !q || p.permissionCode.toLowerCase().includes(q)
+    // 'on' keeps granted items, 'off' keeps non-granted, 'all' keeps both.
     const matchesFilter =
       rosterFilter.value === 'all' || (rosterFilter.value === 'on') === p.granted
     return matchesQuery && matchesFilter
@@ -92,6 +112,7 @@ async function fetchUsers() {
   users.value = resp.data.content ?? []
 }
 
+/** Loads the grant roster for the selected menu + user (approve mode). */
 async function fetchRoster() {
   if (!currentMenu.value || !currentUser.value) {
     roster.value = []
@@ -108,6 +129,7 @@ async function fetchRoster() {
   }
 }
 
+/** Loads the registration roster for the selected menu (register mode). */
 async function fetchRegistrations() {
   if (!currentMenu.value) {
     registrations.value = []
@@ -123,6 +145,7 @@ async function fetchRegistrations() {
   }
 }
 
+/** Resets search/filter and reloads whichever roster the current mode shows. */
 async function refreshRoster() {
   rosterFilter.value = 'all'
   rosterSearch.value = ''
@@ -147,6 +170,10 @@ async function toggleViewMode() {
   await refreshRoster()
 }
 
+/**
+ * Grants/revokes a permission for the current user on the current menu.
+ * Optimistic update: flip the UI first, roll back on backend failure.
+ */
 async function togglePermission(perm: PermissionAccessItem) {
   const next = !perm.granted
   perm.granted = next
@@ -162,6 +189,10 @@ async function togglePermission(perm: PermissionAccessItem) {
   }
 }
 
+/**
+ * Registers/unregisters a permission on the current menu (no user involved).
+ * Optimistic update with rollback, same as togglePermission.
+ */
 async function toggleRegistration(perm: PermissionRegistrationItem) {
   const next = !perm.registered
   perm.registered = next

@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+/**
+ * Tab bar of the multi-tab workspace. Purely presentational: tab state and
+ * navigation live in the tabs store (clicking activates, the × closes).
+ */
 import { useTabsStore } from '@/stores/tabs'
 import { storeToRefs } from 'pinia'
 const tabsStore = useTabsStore()

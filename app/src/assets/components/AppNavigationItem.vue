@@ -31,6 +31,11 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * One sidebar entry, rendered recursively: an item with children becomes an
+ * expandable v-list-group, a leaf becomes a router-linked v-list-item.
+ * Emits 'navigate' on click so the parent drawer can close on mobile.
+ */
 import { inject } from 'vue'
 
 interface MenuItem {
@@ -50,6 +55,8 @@ defineEmits<{ navigate: [] }>()
 
 const lang: Lan | undefined = inject('lan')
 
+// Accepts both 'mdi-account' and camelCase 'mdiAccount' icon names,
+// converting the latter to the kebab-case form Vuetify expects.
 function formatIcon(iconName: string | null): string {
   if (!iconName) return ''
   if (iconName.startsWith('mdi-')) return iconName

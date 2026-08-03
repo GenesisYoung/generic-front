@@ -1,13 +1,21 @@
 <script setup lang="ts">
+/**
+ * Main layout shell for authenticated pages: app bar (with user menu and
+ * logout), sidebar navigation drawer, tab bar, and the routed page content.
+ * Views are wrapped in <keep-alive> so tab switches preserve page state.
+ */
 import AppNavigation from '@/assets/components/AppNavigation.vue'
 import TabMenu from '@/assets/components/TabMenu.vue'
 import { useAuthStore } from '@/stores/auth'
 import { inject, ref } from 'vue'
 import { useDisplay } from 'vuetify'
+
+// Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
 const auth = useAuthStore()
 const { mobile } = useDisplay()
+// Drawer starts open on desktop, closed on mobile.
 const drawer = ref(!mobile.value)
 </script>
 

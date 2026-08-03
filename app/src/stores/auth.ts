@@ -75,6 +75,10 @@ export const useAuthStore = defineStore(
       router.push('/login')
     }
 
+    /**
+     * Rotates the refresh token itself (long-lived token renewal).
+     * On failure all auth state is cleared, forcing a fresh login.
+     */
     async function updateRefreshToken() {
       const resp = await http.get<{ status: number; message: string; object: string }>(
         '/api/auth/refresh/refresh',

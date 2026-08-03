@@ -124,6 +124,14 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * User management page (/manage/users, ROOT only).
+ *
+ * Paginated user table backed by GET /root/user/fetch, with a modal form
+ * (TheForm) shared by both "create" and "edit" flows — `editingUser` being
+ * null means create mode. Deletion asks for confirmation via the global
+ * dialog and is blocked by the backend for ROOT users (code 202).
+ */
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
@@ -132,16 +140,19 @@ import utilStore from '@/stores/utils'
 import type { SelectItem } from '@/types/interface'
 import { globalUtil } from '@/utils/util'
 import { computed, inject, onMounted, ref } from 'vue'
+
+// Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
 
+/** Row shape for the user table (mirrors the backend UserDTO). */
 interface User {
   id: number
   name: string
   displayName: string
   email: string
-  roles: Array<number> // ✅ number, not string
-  roleStr: string
+  roles: Array<number> // Permission codes (numbers, not strings)
+  roleStr: string // human-readable join of the role names, for display
   active: boolean
   isEnabled: number
 }
@@ -161,6 +172,9 @@ const formUser = ref<User>({
   active: true,
   isEnabled: 1,
 })
+// Build the role <v-select> options from the Permission enum. A numeric
+// TS enum contains reverse mappings (value → name), so keep only the
+// entries whose value is a number.
 const roles = ref<SelectItem[]>([])
 {
   const options: SelectItem[] = []
@@ -187,6 +201,7 @@ const updatePage = async (page: number) => {
   currentPage.value = page
   await fetchUsers()
 }
+/** Loads one page of users. Backend pages are 0-based, the UI is 1-based. */
 const fetchUsers = async () => {
   isLoading.value = true
   errorMessage.value = ''
@@ -211,6 +226,7 @@ const fetchUsers = async () => {
   }
 }
 
+/** Opens the form in create mode with a fresh default user (ROOT role). */
 const openCreate = () => {
   editingUser.value = null
   formUser.value = {
@@ -225,6 +241,7 @@ const openCreate = () => {
   }
   showForm.value = true
 }
+/** Opens the form in edit mode, copying the row so edits can be cancelled. */
 const openEdit = (user: User) => {
   editingUser.value = user
   formUser.value = {
@@ -248,6 +265,7 @@ const closeForm = () => {
   errorMessage.value = ''
 }
 
+/** Creates (POST) or updates (PUT) a user depending on the form mode. */
 const saveUser = async () => {
   errorMessage.value = ''
   const payload = {
@@ -280,10 +298,14 @@ const saveUser = async () => {
     errorMessage.value = error instanceof Error ? error.message : 'An unknown error occurred'
   }
 }
+/**
+ * Deletes a user after a confirm dialog. The backend returns code 202 when
+ * the target is a ROOT user, which cannot be deleted.
+ */
 const deleteUser = async (user: User) => {
   await globalUtil.activeDialog(lang?.deleteUser, lang?.deleteUserContent, undefined, 2)
   if (!utilStore().globalDialogValue) {
-    return
+    return // user pressed cancel
   }
   try {
     const response = await http.delete(`${apiBase}/root/delete/${user.id}`)

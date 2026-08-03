@@ -1,5 +1,8 @@
-// src/main.ts
-
+/**
+ * Application bootstrap: creates the Vue app and wires up Pinia (with
+ * localStorage persistence), Vue Router, and Vuetify (MDI icons +
+ * light/dark violet themes, dark by default).
+ */
 import '@mdi/font/css/materialdesignicons.css'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
