@@ -54,7 +54,7 @@ const filteredRoster = computed(() => {
 const grantedCount = computed(() => roster.value.filter((u) => u.granted).length)
 
 async function fetchMenus() {
-  const resp = await http.get('manager/menu/fetch?page=0&size=200')
+  const resp = await http.get('manager/menu/fetch/valid?page=0&size=200')
   menus.value = resp.data.content ?? []
 }
 
@@ -174,7 +174,8 @@ onMounted(async () => {
           </article>
 
           <div v-if="!rosterLoading && roster.length > 0" class="roster-foot">
-            <span class="mono">{{ grantedCount }} / {{ roster.length }}</span> {{ lan?.accessSummary }}
+            <span class="mono">{{ grantedCount }} / {{ roster.length }}</span>
+            {{ lan?.accessSummary }}
           </div>
         </template>
       </div>

@@ -11,21 +11,22 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const pageCount = ref(0)
 const permissionsRespsonse = ref<
-  Array<{ id: number; permissionName: string; val: number; show: string }>
+  Array<{ id: number; permissionCode: string; val: number; show: string }>
 >([])
 const showForm = ref(false)
-const selections = ref()
+const selections = ref([])
+const rootSelections = ref([])
 const permissionRoot = ref(new Set<string>())
 const permission = ref(
-  new Map<string, { id: number; permissionName: string; val: number; show: string }[]>(),
+  new Map<string, { id: number; permissionCode: string; val: number; show: string }[]>(),
 )
 const formData = ref<{
   id: number | null
-  permissionName: string
+  permissionCode: string
   val: number | null
 }>({
   id: null,
-  permissionName: '',
+  permissionCode: '',
   val: null,
 })
 const fetchPermissions = async (page: number) => {
@@ -33,7 +34,7 @@ const fetchPermissions = async (page: number) => {
   permissionRoot.value = new Set<string>()
   permission.value = new Map<
     string,
-    { id: number; permissionName: string; val: number; show: string }[]
+    { id: number; permissionCode: string; val: number; show: string }[]
   >()
   const resp = await http.get(
     `/admin/permissions/fetch?page=${currentPage.value - 1}&size=${pageSize.value}`,
@@ -41,7 +42,7 @@ const fetchPermissions = async (page: number) => {
   if (resp.data.content) {
     permissionsRespsonse.value = resp.data.content
     permissionsRespsonse.value.forEach((ele) => {
-      const val = ele.permissionName
+      const val = ele.permissionCode
       const v = val.split('.')
       if (v[0] != undefined) {
         permissionRoot.value.add(v[0])
@@ -50,7 +51,7 @@ const fetchPermissions = async (page: number) => {
             v[0],
             new Array<{
               id: number
-              permissionName: string
+              permissionCode: string
               val: number
               show: string
             }>(),
@@ -58,7 +59,7 @@ const fetchPermissions = async (page: number) => {
         }
         if (v[1] != undefined && permission.value.get(v[0]) != undefined) {
           const list = permission.value.get(v[0])
-          list?.push({ id: ele.id, val: ele.val, permissionName: ele.permissionName, show: v[1] })
+          list?.push({ id: ele.id, val: ele.val, permissionCode: ele.permissionCode, show: v[1] })
           if (list != undefined) permission.value.set(v[0], list)
         }
       }
@@ -68,7 +69,7 @@ const fetchPermissions = async (page: number) => {
 }
 async function addRecord() {
   showForm.value = true
-  formData.value = { id: null, permissionName: '', val: null }
+  formData.value = { id: null, permissionCode: '', val: null }
 }
 async function submitData() {
   const resp = http.post('/admin/permissions/save', formData.value)
@@ -80,12 +81,25 @@ async function submitData() {
 }
 function cancel() {
   showForm.value = false
-  formData.value = { id: null, permissionName: '', val: null }
+  formData.value = { id: null, permissionCode: '', val: null }
 }
 async function remove() {
-  const resp = await http.post('/admin/permissions/delete', { deleteVal: selections.value })
-  if (resp.data.status != 200) {
-    globalUtil.activeDialog(lan?.error, resp.data.message, undefined)
+  const numbers = ref([])
+  const strings = ref([])
+  selections.value.forEach((ele) => {
+    if (Number.isInteger(ele)) {
+      numbers.value.push(ele)
+    } else {
+      strings.value.push(ele)
+    }
+  })
+  const resp_1 = await http.post('/admin/permissions/delete', { deleteVal: numbers.value })
+  const resp_2 = await http.post('/admin/permissions/deleteRoot', { deleteVal: strings.value })
+  if (resp_1.data.status != 200) {
+    globalUtil.activeDialog(lan?.error, resp_1.data.message, undefined)
+  }
+  if (resp_2.data.status != 200) {
+    globalUtil.activeDialog(lan?.error, resp_2.data.message, undefined)
   }
   showForm.value = false
   await fetchPermissions(currentPage.value)
@@ -114,14 +128,23 @@ onMounted(async () => {
       <v-list v-model:selected="selections" select-strategy="classic">
         <v-list-group v-for="root in permissionRoot" :key="root">
           <template v-slot:activator="{ props }">
-            <v-list-item v-bind="props" :title="root"></v-list-item>
+            <v-list-item v-bind="props" :title="root" :value="root">
+              <template v-slot:prepend="{ isSelected, select }">
+                <v-list-item-action start>
+                  <v-checkbox-btn
+                    :model-value="isSelected"
+                    @update:model-value="select"
+                  ></v-checkbox-btn>
+                </v-list-item-action>
+              </template>
+            </v-list-item>
           </template>
           <v-list-item
             v-for="val in permission.get(root)"
             :key="val.id"
-            :value="val.val"
+            :value="val.id"
             :title="val.show"
-            :subtitle="val.val"
+            :subtitle="val.id"
           >
             <template v-slot:prepend="{ isSelected, select }">
               <v-list-item-action start>
@@ -140,7 +163,7 @@ onMounted(async () => {
       <template #form>
         <v-row>
           <v-col>
-            <v-text-field :label="lan?.name" v-model="formData.permissionName" />
+            <v-text-field :label="lan?.name" v-model="formData.permissionCode" />
             <v-btn :text="lan?.submit" color="green" class="mr-2" @click="submitData" />
             <v-btn :text="lan?.cancel" color="red" @click="cancel" />
           </v-col>

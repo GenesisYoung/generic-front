@@ -23,15 +23,13 @@ interface UserOption {
 
 interface PermissionAccessItem {
   id: number
-  permissionName: string
-  val: number
+  permissionCode: string
   granted: boolean
 }
 
 interface PermissionRegistrationItem {
   id: number
-  permissionName: string
-  val: number
+  permissionCode: string
   registered: boolean
 }
 
@@ -64,7 +62,7 @@ const filteredMenus = computed(() => {
 const filteredRoster = computed(() => {
   const q = rosterSearch.value.trim().toLowerCase()
   return roster.value.filter((p) => {
-    const matchesQuery = !q || p.permissionName.toLowerCase().includes(q)
+    const matchesQuery = !q || p.permissionCode.toLowerCase().includes(q)
     const matchesFilter =
       rosterFilter.value === 'all' || (rosterFilter.value === 'on') === p.granted
     return matchesQuery && matchesFilter
@@ -74,7 +72,7 @@ const filteredRoster = computed(() => {
 const filteredRegistrations = computed(() => {
   const q = rosterSearch.value.trim().toLowerCase()
   return registrations.value.filter((p) => {
-    const matchesQuery = !q || p.permissionName.toLowerCase().includes(q)
+    const matchesQuery = !q || p.permissionCode.toLowerCase().includes(q)
     const matchesFilter =
       rosterFilter.value === 'all' || (rosterFilter.value === 'on') === p.registered
     return matchesQuery && matchesFilter
@@ -85,7 +83,7 @@ const grantedCount = computed(() => roster.value.filter((p) => p.granted).length
 const registeredCount = computed(() => registrations.value.filter((p) => p.registered).length)
 
 async function fetchMenus() {
-  const resp = await http.get('manager/menu/fetch?page=0&size=200')
+  const resp = await http.get('manager/menu/fetch/valid?page=0&size=200')
   menus.value = resp.data.content ?? []
 }
 
@@ -118,6 +116,7 @@ async function fetchRegistrations() {
   registrationsLoading.value = true
   try {
     const resp = await http.get(`permission/menu/registration?navId=${currentMenu.value.id}`)
+    console.log('fetchRegistrations', resp.data)
     registrations.value = resp.data ?? []
   } finally {
     registrationsLoading.value = false
@@ -252,7 +251,11 @@ onMounted(async () => {
             </v-autocomplete>
 
             <p class="roster-desc">
-              {{ viewMode === 'approve' ? lan?.togglePermissionAccessDesc : lan?.toggleRegistrationDesc }}
+              {{
+                viewMode === 'approve'
+                  ? lan?.togglePermissionAccessDesc
+                  : lan?.toggleRegistrationDesc
+              }}
             </p>
 
             <div v-if="viewMode === 'register' || currentUser" class="roster-controls">
@@ -286,9 +289,9 @@ onMounted(async () => {
                 <template #prepend>
                   <v-icon icon="mdi-key-outline" class="mr-1" />
                 </template>
-                <v-list-item-title class="mono">{{ perm.permissionName }}</v-list-item-title>
+                <v-list-item-title class="mono">{{ perm.permissionCode }}</v-list-item-title>
                 <v-list-item-subtitle
-                  >{{ lan?.permissionValue }}: {{ perm.val }}</v-list-item-subtitle
+                  >{{ lan?.permissionValue }}: {{ perm.id }}</v-list-item-subtitle
                 >
                 <template #append>
                   <span class="status-pill mr-2" :class="perm.granted ? 'success' : 'neutral'">
@@ -314,14 +317,17 @@ onMounted(async () => {
             </div>
           </template>
           <template v-else>
-            <v-list v-if="!registrationsLoading && filteredRegistrations.length > 0" density="compact">
+            <v-list
+              v-if="!registrationsLoading && filteredRegistrations.length > 0"
+              density="compact"
+            >
               <v-list-item v-for="perm in filteredRegistrations" :key="perm.id">
                 <template #prepend>
                   <v-icon icon="mdi-link-variant" class="mr-1" />
                 </template>
-                <v-list-item-title class="mono">{{ perm.permissionName }}</v-list-item-title>
+                <v-list-item-title class="mono">{{ perm.permissionCode }}</v-list-item-title>
                 <v-list-item-subtitle
-                  >{{ lan?.permissionValue }}: {{ perm.val }}</v-list-item-subtitle
+                  >{{ lan?.permissionValue }}: {{ perm.id }}</v-list-item-subtitle
                 >
                 <template #append>
                   <span class="status-pill mr-2" :class="perm.registered ? 'success' : 'neutral'">
