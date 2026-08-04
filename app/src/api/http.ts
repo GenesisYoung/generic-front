@@ -70,8 +70,9 @@ http.interceptors.response.use(
       store?.logout()
       return Promise.reject(error)
     }
-    if (error?.status !== 403 || originalRequest._retried) {
-      // Only handle 401 errors, and only retry once (avoid infinite loop).
+
+    if (error?.status === 401) {
+      store?.logout()
       return Promise.reject(error)
     }
 
