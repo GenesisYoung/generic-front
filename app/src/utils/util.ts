@@ -11,7 +11,7 @@ export const globalUtil = {
    */
   activeDialog: async (
     title: string | undefined,
-    content: string | undefined,
+    content: string | undefined | unknown,
     icon: string | undefined,
     mode: number = 1,
   ) => {

@@ -22,7 +22,7 @@ const utilStore = defineStore('utils', () => {
   const globalDialogValue = ref<boolean>(false)
   const globalDialogTitle = ref<string | undefined>(undefined)
   const globalDialogIcon = ref<string | undefined>('mdi-alert-circle')
-  const globalDialogContent = ref<string | undefined>(undefined)
+  const globalDialogContent = ref<string | unknown>()
   //-----dialog end-----
   /**
    * Getters

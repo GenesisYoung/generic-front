@@ -79,7 +79,7 @@ async function fetchNavMenu() {
     }
   })
   menu.value = m
-  console.log(menu.value)
+  // console.log(menu.value)
 }
 
 /** Recursively attaches the children of `id` (from the flat list) to `target`. */
@@ -92,7 +92,7 @@ function findChildren(id: number, data: Menu[], target: Menu): Menu[] {
       findChildren(ele.id, data, ele)
     }
   })
-  console.log(data)
+  // console.log(data)
   target.children = children
   children.forEach((item, idx) => {
     data.slice(idx, idx + 1)

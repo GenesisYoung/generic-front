@@ -45,7 +45,7 @@
             <td :title="user.displayName">{{ user.displayName }}</td>
             <td>
               <v-select
-                v-model="user.roles"
+                :model-value="user.roles"
                 :items="roles"
                 item-title="title"
                 item-value="value"
@@ -95,6 +95,7 @@
             <v-text-field :label="lang?.userName" v-model="formUser.name" />
             <v-text-field :label="lang?.displayName" v-model="formUser.displayName" />
             <v-text-field :label="lang?.userEmail" v-model="formUser.email" type="email" />
+            <!-- <input type="text" hidden :value="syncRoles(formUser.roles)" /> -->
             <v-select
               :label="lang?.userRole"
               v-model="formUser.roles"
@@ -151,7 +152,7 @@ interface User {
   name: string
   displayName: string
   email: string
-  roles: Array<number> // Permission codes (numbers, not strings)
+  roles: Array<{ title: string; roleId: number; userId: number; value: number }> // Permission codes (numbers, not strings)
   roleStr: string // human-readable join of the role names, for display
   active: boolean
   isEnabled: number
@@ -211,9 +212,9 @@ const fetchUsers = async () => {
     )
     const userList: User[] = resp.data.content
     userList.forEach((e) => {
-      e.roles = e.roles.map((r) => Number(r)) // ✅ ensure numbers
+      e.roles = e.roles.map((r) => r) // ✅ ensure numbers
       e.roleStr = e.roles
-        .map((p) => Permission[p])
+        .map((p) => Permission[p.value])
         .filter(Boolean)
         .join(' ')
     })
@@ -234,7 +235,7 @@ const openCreate = () => {
     name: '',
     displayName: '',
     email: '',
-    roles: [1001],
+    roles: [],
     roleStr: 'ROOT',
     active: true,
     isEnabled: 1,
@@ -249,9 +250,9 @@ const openEdit = (user: User) => {
     name: user.name,
     displayName: user.displayName,
     email: user.email,
-    roles: [...user.roles], // already numbers
+    roles: user.roles,
     roleStr: user.roles
-      .map((p) => Permission[p])
+      .map((p) => Permission[p.value])
       .filter(Boolean)
       .join(','),
     active: user.active,
@@ -273,16 +274,14 @@ const saveUser = async () => {
     name: formUser.value.name.trim(),
     displayName: formUser.value.displayName.trim(),
     email: formUser.value.email.trim(),
-    roles: formUser.value.roles,
+    roleList: formUser.value.roles,
     active: formUser.value.active,
     isEnabled: 1,
   }
-
   if (!payload.name || !payload.email) {
     errorMessage.value = 'Name and email are required'
     return
   }
-
   try {
     const url = `${apiBase}/root/users`
     const response = editingUser.value
@@ -295,7 +294,7 @@ const saveUser = async () => {
     await fetchUsers()
     closeForm()
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'An unknown error occurred'
+    globalUtil.activeDialog(lang?.saveFail, error, undefined, 1)
   }
 }
 /**
@@ -318,6 +317,18 @@ const deleteUser = async (user: User) => {
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'An unknown error occurred'
   }
+}
+const parseVal = (user: {
+  id: number
+  name: string
+  displayName: string
+  email: string
+  roles: Array<{ name: string; roleId: number; userId: number; val: number }>
+  roleStr: string
+  active: boolean
+  isEnabled: number
+}) => {
+  return user.roles.map((e) => e.val)
 }
 
 onMounted(async () => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import TheDialog from '@/assets/components/utils/TheDialog.vue'
-import { lan } from '@/lang/china_zh'
+import { lan } from '@/lang/china_zh.ts'
 import { useAuthStore } from '@/stores/auth'
 import { provide } from 'vue'
 import utilStore from './stores/utils.ts'

@@ -140,6 +140,7 @@ const mapping: Record<string, string> = {
   notRegistered: '未注册',
   toggleRegistrationDesc: '切换哪些权限可用于此菜单。',
   registeredSummary: '已注册',
+  saveFail: '更改未生效',
 }
 type Lan = typeof mapping
 export { mapping as lan }
