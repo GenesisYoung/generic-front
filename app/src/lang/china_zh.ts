@@ -90,7 +90,7 @@ const mapping: Record<string, string> = {
   confirm: '确认',
   deleteUser: '删除用户',
   deleteUserContent: '是否确认删除用户',
-  deleteFail: '删除用户失败',
+  deleteFail: '删除失败',
   unexpecetdError: '服务器发生了未知错误！',
   cantDeleteRoot: '无法删除管理员账户',
   loginFailure: '登录异常',

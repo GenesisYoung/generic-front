@@ -133,7 +133,7 @@ const mapping: Record<string, string> = {
   confirm: 'Confirm',
   deleteUser: 'Delete User',
   deleteUserContent: 'Are you sure you want to delete the user',
-  deleteFail: 'Failed to delete the user',
+  deleteFail: 'Failed to delete',
   unexpecetdError: 'An unexpected server error occurred!',
   cantDeleteRoot: 'The administrator account cannot be deleted',
   loginFailure: 'Login Failed',

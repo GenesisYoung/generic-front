@@ -315,7 +315,7 @@ const deleteUser = async (user: User) => {
     }
     users.value = users.value.filter((u) => u.id !== user.id)
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'An unknown error occurred'
+    globalUtil.activeDialog(lang?.deleteFail, error, undefined, 1)
   }
 }
 const parseVal = (user: {
