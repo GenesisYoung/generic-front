@@ -66,21 +66,11 @@ http.interceptors.response.use(
   async (error: AxiosResponse) => {
     const store = getAuthStore()
     const originalRequest = error.config
+    // If refresh token expired, then logout
     if (originalRequest.url?.includes('/auth/refresh/access')) {
       store?.logout()
       return Promise.reject(error)
     }
-
-    if (error?.status === 401) {
-      store?.logout()
-      return Promise.reject(error)
-    }
-    // If the request is not a 403, just let it go, 403 is the only error we can recover from by refreshing the token.
-    if (error.status != 403) {
-      const err = { ...error }
-      return Promise.reject(err.response.data.message)
-    }
-
     originalRequest._retried = true
 
     if (!store?.refreshToken) {
