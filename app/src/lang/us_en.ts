@@ -141,6 +141,18 @@ const mapping: Record<string, string> = {
   disabledUser: 'This account has been deactivated',
   logout: 'Logout',
   saveFail: " 'Failed to save changes',",
+  associatedPermissions: 'Associated permissions',
+  associatedRoles: 'Associated roles',
+  processed: 'Processed',
+  deleteRole: 'Delete role',
+  deleteRoleContent: 'Are you sure you want to delete this role?',
+  selectRolePrompt: 'Select a role from the left to manage its permissions.',
+  departmentManagement: 'Department Management',
+  departmentList: 'Department List',
+  departmentName: 'Department name',
+  deleteDepartment: 'Delete department',
+  deleteDepartmentContent: 'Are you sure you want to delete this department?',
+  selectDepartmentPrompt: 'Select a department from the left to manage its roles.',
 }
 type Lan = typeof mapping
 export { mapping as lan }

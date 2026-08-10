@@ -143,6 +143,18 @@ const mapping: Record<string, string> = {
   saveFail: '更改未生效',
   defaultPermissionAlloc: '默认权限分配',
   defaultPermission: '默认权限',
+  associatedPermissions: '关联权限',
+  associatedRoles: '关联角色',
+  processed: '已处理',
+  deleteRole: '删除角色',
+  deleteRoleContent: '是否确认删除该角色？',
+  selectRolePrompt: '请从左侧选择一个角色以管理其权限。',
+  departmentManagement: '部门管理',
+  departmentList: '部门列表',
+  departmentName: '部门名称',
+  deleteDepartment: '删除部门',
+  deleteDepartmentContent: '是否确认删除该部门？',
+  selectDepartmentPrompt: '请从左侧选择一个部门以管理其角色。',
 }
 type Lan = typeof mapping
 export { mapping as lan }
