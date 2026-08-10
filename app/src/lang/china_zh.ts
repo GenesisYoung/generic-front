@@ -141,6 +141,8 @@ const mapping: Record<string, string> = {
   toggleRegistrationDesc: '切换哪些权限可用于此菜单。',
   registeredSummary: '已注册',
   saveFail: '更改未生效',
+  defaultPermissionAlloc: '默认权限分配',
+  defaultPermission: '默认权限',
 }
 type Lan = typeof mapping
 export { mapping as lan }

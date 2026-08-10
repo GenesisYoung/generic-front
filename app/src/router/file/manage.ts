@@ -49,6 +49,14 @@ const manage: Route[] = [
           requireAuth: true,
         },
       },
+      {
+        path: 'defaults',
+        name: 'defaultPermissionAlloc',
+        component: () => import('@/views/manage/view/DefaultPermissionAlloc.vue'),
+        meta: {
+          requireAuth: true,
+        },
+      },
     ],
   },
   // Permission management console — child tabs for actions, permissions,

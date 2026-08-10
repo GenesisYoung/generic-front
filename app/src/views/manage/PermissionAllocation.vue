@@ -9,6 +9,7 @@ const lan: Lan | undefined = inject('lan')
     <v-tabs show-arrows>
       <v-tab to="/user/permission/allocation/user">{{ lan?.throughUser }}</v-tab>
       <v-tab to="/user/permission/allocation/permission">{{ lan?.throughPermission }}</v-tab>
+      <v-tab to="/user/permission/allocation/defaults">{{ lan?.defaultPermissionAlloc }}</v-tab>
     </v-tabs>
     <router-view></router-view>
   </div>

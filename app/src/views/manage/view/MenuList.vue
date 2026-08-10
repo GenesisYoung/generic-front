@@ -24,6 +24,7 @@ interface MenuItem {
   icon: string
   route: string
   color: string
+  permission: undefined | null
 }
 
 const emptyForm = (): MenuItem => ({
@@ -33,6 +34,7 @@ const emptyForm = (): MenuItem => ({
   icon: '',
   route: '',
   color: '',
+  permission: null,
 })
 
 const menus = ref<MenuItem[]>([])
@@ -42,6 +44,7 @@ const pageCount = ref(0)
 const showForm = ref(false)
 const editing = ref(false)
 const formData = ref<MenuItem>(emptyForm())
+const menuPermissions = ref([])
 
 /** Normalises an icon name so it always carries the 'mdi-' prefix. */
 function formatIcon(iconName: string | undefined): string {
@@ -57,6 +60,7 @@ const fetchMenus = async (page: number) => {
   )
   if (resp.data.content) {
     menus.value = resp.data.content
+    console.log(menus.value)
     pageCount.value = resp.data.totalPages
   }
 }
@@ -105,9 +109,14 @@ async function remove(item: MenuItem) {
   await fetchMenus(currentPage.value)
 }
 
+async function fetchMenuPermission() {
+  menuPermissions.value = (await http.get('/permission/fetch/menu/permission')).data.object
+}
+
 onMounted(async () => {
   currentPage.value = 1
   await fetchMenus(currentPage.value)
+  await fetchMenuPermission()
 })
 </script>
 
@@ -126,6 +135,7 @@ onMounted(async () => {
             <th>{{ lan?.menuIcon }}</th>
             <th>{{ lan?.menuRoute }}</th>
             <th>{{ lan?.menuColor }}</th>
+
             <th class="actions-col">{{ lan?.actions }}</th>
           </tr>
         </thead>
@@ -163,6 +173,13 @@ onMounted(async () => {
             <v-text-field :label="lan?.menuIcon" v-model="formData.icon" />
             <v-text-field :label="lan?.menuRoute" v-model="formData.route" />
             <v-text-field :label="lan?.menuColor" v-model="formData.color" />
+            <v-select
+              :label="lan?.defaultPermission"
+              :items="menuPermissions"
+              v-model="formData.permission"
+              item-title="permissionCode"
+              item-value="id"
+            ></v-select>
             <div class="color-select-bar mb-2">
               <v-chip color="indigo" class="mr-2" @click="updateColor('indigo')">indigo</v-chip
               ><v-chip
