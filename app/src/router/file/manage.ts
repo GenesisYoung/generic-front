@@ -21,6 +21,16 @@ const manage: Route[] = [
       permission: Permission.ROOT,
     },
   },
+  // Department management (department ↔ role) — ROOT only.
+  {
+    path: '/manage/departments',
+    name: 'departmentManagement',
+    component: () => import('@/views/manage/DepartmentManage.vue'),
+    meta: {
+      requireAuth: true,
+      permission: Permission.ROOT,
+    },
+  },
   // Permission allocation — two child views offering the same data from
   // opposite angles: "by user" (what can this user do?) and "by permission"
   // (who holds this permission?). Defaults to the by-user view.
