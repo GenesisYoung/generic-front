@@ -28,6 +28,11 @@
             <th>{{ lang?.displayName }}</th>
             <th>{{ lang?.userRole }}</th>
             <th>{{ lang?.userStatus }}</th>
+            <th>{{ lang?.realName }}</th>
+            <th style="min-width: 150px">{{ lang?.position }}</th>
+            <th>{{ lang?.birthday }}</th>
+            <th>{{ lang?.hireDate }}</th>
+            <th>{{ lang?.departments }}</th>
             <th class="actions-col">{{ lang?.userActions }}</th>
           </tr>
         </thead>
@@ -43,23 +48,38 @@
             <td :title="user.name">{{ user.name }}</td>
             <td :title="user.email">{{ user.email }}</td>
             <td :title="user.displayName">{{ user.displayName }}</td>
-            <td>
+            <td style="min-width: 150px">
               <v-select
                 :model-value="user.roles"
                 :items="roles"
                 item-title="title"
                 item-value="value"
                 multiple
-                disabled
                 density="compact"
                 variant="plain"
                 hide-details
+                disabled
               ></v-select>
             </td>
             <td>
               <span class="status-pill" :class="user.active ? 'success' : 'neutral'">
                 {{ user.active ? lang?.active : lang?.disabled }}
               </span>
+            </td>
+            <td>{{ user.realName }}</td>
+            <td>{{ user.title }}</td>
+            <td>{{ user.birthday }}</td>
+            <td>{{ user.hireDate }}</td>
+            <td style="min-width: 250px">
+              <v-select
+                :label="lang?.departments"
+                v-model="formUser.departments"
+                :items="deptOptions"
+                item-title="title"
+                item-value="val"
+                multiple
+                disabled
+              ></v-select>
             </td>
             <td class="actions-col">
               <v-btn
@@ -102,6 +122,22 @@
               :items="roles"
               item-title="title"
               item-value="value"
+              multiple
+            ></v-select>
+            <v-text-field :label="lang?.realName" v-model="formUser.realName" />
+            <v-text-field :label="lang?.position" />
+            <div class="d-flex justify-center">
+              <v-date-input :label="lang?.birthday" v-model="formUser.birthday"></v-date-input>
+            </div>
+            <div class="d-flex justify-center">
+              <v-date-input :label="lang?.hireDate" v-model="formUser.hireDate"></v-date-input>
+            </div>
+            <v-select
+              :label="lang?.departments"
+              v-model="formUser.departments"
+              :items="deptOptions"
+              item-title="title"
+              item-value="val"
               multiple
             ></v-select>
             <v-checkbox
@@ -156,6 +192,11 @@ interface User {
   roleStr: string // human-readable join of the role names, for display
   active: boolean
   isEnabled: number
+  realName: string
+  title: string
+  birthday: string
+  hireDate: string
+  departments: number[]
 }
 
 const users = ref<User[]>([])
@@ -172,7 +213,13 @@ const formUser = ref<User>({
   roleStr: 'ROOT',
   active: true,
   isEnabled: 1,
+  realName: '',
+  title: '',
+  birthday: '',
+  hireDate: '',
+  departments: [],
 })
+const deptOptions = ref<{ val: number; title: string }[]>([])
 // Build the role <v-select> options from the Permission enum. A numeric
 // TS enum contains reverse mappings (value → name), so keep only the
 // entries whose value is a number.
@@ -226,6 +273,10 @@ const fetchUsers = async () => {
     isLoading.value = false
   }
 }
+const fetchOptions = async () => {
+  const resp = await http.get('/admin/departments/dept/options')
+  deptOptions.value = resp.data.object
+}
 
 /** Opens the form in create mode with a fresh default user (ROOT role). */
 const openCreate = () => {
@@ -239,6 +290,11 @@ const openCreate = () => {
     roleStr: 'ROOT',
     active: true,
     isEnabled: 1,
+    realName: '',
+    title: '',
+    birthday: '',
+    hireDate: '',
+    departments: [],
   }
   showForm.value = true
 }
@@ -257,6 +313,11 @@ const openEdit = (user: User) => {
       .join(','),
     active: user.active,
     isEnabled: 1,
+    realName: user.realName,
+    title: user.title,
+    birthday: user.birthday,
+    hireDate: user.hireDate,
+    departments: user.departments,
   }
   showForm.value = true
 }
@@ -274,9 +335,14 @@ const saveUser = async () => {
     name: formUser.value.name.trim(),
     displayName: formUser.value.displayName.trim(),
     email: formUser.value.email.trim(),
-    roleList: formUser.value.roles,
+    roleList: formUser.value.roles.map((ele) => ele.roleId),
     active: formUser.value.active,
     isEnabled: 1,
+    realName: formUser.value.realName,
+    title: formUser.value.title,
+    birthday: formUser.value.birthday,
+    hireDate: formUser.value.hireDate,
+    departments: formUser.value.departments,
   }
   if (!payload.name || !payload.email) {
     errorMessage.value = 'Name and email are required'
@@ -318,20 +384,9 @@ const deleteUser = async (user: User) => {
     globalUtil.activeDialog(lang?.deleteFail, error, undefined, 1)
   }
 }
-const parseVal = (user: {
-  id: number
-  name: string
-  displayName: string
-  email: string
-  roles: Array<{ name: string; roleId: number; userId: number; val: number }>
-  roleStr: string
-  active: boolean
-  isEnabled: number
-}) => {
-  return user.roles.map((e) => e.val)
-}
 
 onMounted(async () => {
   await fetchUsers()
+  await fetchOptions()
 })
 </script>

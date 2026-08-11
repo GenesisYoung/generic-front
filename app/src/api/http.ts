@@ -14,6 +14,8 @@ declare module 'axios' {
     // Marks a request that has already been retried after a token refresh,
     // so a second failure is not retried again (prevents infinite loops).
     _retried?: boolean
+    _max_retry: number
+    _current_retry: number
   }
 }
 
@@ -72,6 +74,7 @@ http.interceptors.response.use(
       return Promise.reject(error)
     }
     originalRequest._retried = true
+    originalRequest._max_retry = 1
 
     if (!store?.refreshToken) {
       store?.logout()
@@ -83,8 +86,11 @@ http.interceptors.response.use(
     if (isRefreshing) {
       return new Promise((resolve) => {
         waitingQueue.push((newToken: string) => {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`
-          resolve(http(originalRequest))
+          if (originalRequest._current_retry < originalRequest._max_retry) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`
+            originalRequest._current_retry = 1
+            resolve(http(originalRequest))
+          }
         })
       })
     }

@@ -155,6 +155,11 @@ const mapping: Record<string, string> = {
   deleteDepartment: '删除部门',
   deleteDepartmentContent: '是否确认删除该部门？',
   selectDepartmentPrompt: '请从左侧选择一个部门以管理其角色。',
+  realName: '真实姓名',
+  position: '职位',
+  birthday: '生日',
+  hireDate: '入职日期',
+  departments: '就职部门',
 }
 type Lan = typeof mapping
 export { mapping as lan }
