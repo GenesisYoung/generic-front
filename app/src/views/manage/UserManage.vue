@@ -125,12 +125,22 @@
               multiple
             ></v-select>
             <v-text-field :label="lang?.realName" v-model="formUser.realName" />
-            <v-text-field :label="lang?.position" />
+            <v-text-field :label="lang?.position" v-model="formUser.title" />
             <div class="d-flex justify-center">
-              <v-date-input :label="lang?.birthday" v-model="formUser.birthday"></v-date-input>
+              <v-date-input
+                :label="lang?.birthday"
+                v-model="formUser.birthday"
+                input-format="MM/dd/yyyy"
+                autocomplete="false"
+              ></v-date-input>
             </div>
             <div class="d-flex justify-center">
-              <v-date-input :label="lang?.hireDate" v-model="formUser.hireDate"></v-date-input>
+              <v-date-input
+                :label="lang?.hireDate"
+                v-model="formUser.hireDate"
+                input-format="MM/dd/yyyy"
+                autocomplete="false"
+              ></v-date-input>
             </div>
             <v-select
               :label="lang?.departments"
