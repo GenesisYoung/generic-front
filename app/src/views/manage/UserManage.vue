@@ -73,7 +73,7 @@
             <td style="min-width: 250px">
               <v-select
                 :label="lang?.departments"
-                v-model="formUser.departments"
+                v-model="user.departments"
                 :items="deptOptions"
                 item-title="title"
                 item-value="val"
