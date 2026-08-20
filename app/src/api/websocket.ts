@@ -8,14 +8,14 @@ class WebSocketService {
   /** Destinations requested before CONNECTED arrived; replayed on connect. */
   private pending = new Map<string, MessageHandler<unknown>>()
 
-  connect(token: string, refreshToken: string): void {
+  connect(token: string, userName: string): void {
     if (this.client?.active) return
 
     this.client = new Client({
       brokerURL: import.meta.env.VITE_MESSAGE_URL,
 
       // Sent as native headers on the STOMP CONNECT frame.
-      connectHeaders: { Authorization: `Bearer ${token}`, 'Refresh-Token': refreshToken },
+      connectHeaders: { Authorization: `Bearer ${token}`, 'User-Name': userName },
 
       reconnectDelay: 5000, // 0 disables automatic reconnect
       heartbeatIncoming: 10000,

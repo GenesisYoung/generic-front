@@ -29,10 +29,13 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore()
   if (config.url === REFRESH_URL && store?.refreshToken) {
     config.headers.Authorization = `Bearer ${store.refreshToken}`
-    config.headers['Refresh-Token'] = store.refreshToken
+    // debugger
+    config.headers['User-Name'] = store.identity?.name
   } else if (store?.accessToken) {
     config.headers.Authorization = `Bearer ${store.accessToken}`
-    if (store.refreshToken) config.headers['Refresh-Token'] = store.refreshToken
+    // debugger
+    config.headers['User-Name'] = store.identity?.name
+    // if (store.refreshToken) config.headers['Refresh-Token'] = store.refreshToken
   }
   return config
 })

@@ -13,7 +13,7 @@ const notificationStore = useNotificationStore()
 notificationStore.start()
 watch(
   () => useAuthStore().accessToken,
-  (val) => {
+  async (val) => {
     useNotificationStore().stop()
     useNotificationStore().start()
   },

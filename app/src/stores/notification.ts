@@ -13,7 +13,7 @@ export interface NotificationDto {
 export interface SystemStatusDto {
   code: number
   object: {
-    latestRereshCode: string
+    latestAccessToken: string
   }
 }
 
@@ -25,7 +25,7 @@ export const useNotificationStore = defineStore('notification', () => {
     const auth = useAuthStore()
     if (!auth.accessToken) return
 
-    websocket.connect(auth.accessToken, auth.refreshToken!)
+    websocket.connect(auth.accessToken, auth.identity!.name)
 
     // websocket.subscribe<NotificationDto>('/user/queue/notification', (dto) => {
     //   items.value.unshift(dto)
@@ -36,8 +36,9 @@ export const useNotificationStore = defineStore('notification', () => {
     // })
 
     websocket.subscribe<SystemStatusDto>('/user/system/status', (dto) => {
+      console.log('system status===>', dto)
       if (dto.code === 1) {
-        if (dto.object.latestRereshCode != useAuthStore().refreshToken) {
+        if (dto.object.latestAccessToken != useAuthStore().accessToken) {
           useAuthStore().logout()
         }
       }

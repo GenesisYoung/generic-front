@@ -256,11 +256,7 @@ onMounted(async () => {
           <v-col>
             <v-text-field :label="lan?.departmentName" v-model="formData.deptName" />
             <v-text-field :label="lan?.roleValue" v-model.number="formData.val" type="number" />
-            <v-text-field
-              :label="lan?.parentId"
-              v-model.number="formData.parentId"
-              type="number"
-            />
+            <v-text-field :label="lan?.parentId" v-model.number="formData.parentId" type="number" />
             <v-btn :text="lan?.submit" color="green" class="mr-2" @click="submitDepartment" />
             <v-btn :text="lan?.cancel" color="red" @click="cancelForm" />
           </v-col>

@@ -15,7 +15,7 @@ export interface TokenPair {
 /** The authenticated user's profile, as returned by the backend. */
 export interface Identity {
   id: number
-  username: string
+  name: string
   email: string
   displayName: string
   avator: string
