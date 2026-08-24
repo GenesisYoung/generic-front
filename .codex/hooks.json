@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/genesisyoung/Developer/Generic-Front/.codex/hooks/session-start.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

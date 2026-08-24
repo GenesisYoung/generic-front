@@ -51,7 +51,7 @@ http.interceptors.response.use(
   (resp) => {
     // Axios lowercases all response header names.
     const remaining = Number(resp.headers['refresh-token-remaining'])
-    if (Number.isFinite(remaining) && remaining < 1000 * 60 * 60 * 24) {
+    if (Number.isFinite(remaining) && remaining < 1000 * 60 * 60 * 24 * 6) {
       getAuthStore()?.updateRefreshToken()
     }
     return resp
