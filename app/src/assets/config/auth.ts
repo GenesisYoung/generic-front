@@ -1,6 +1,6 @@
 /**
  * Authentication domain config: permission codes and the identity/token
- * shapes persisted to localStorage. Kept in sync with the backend's
+ * shapes persisted for the current browser session. Kept in sync with the backend's
  * Permission table (codes 1001–1009).
  */
 
@@ -24,24 +24,17 @@ enum Permission {
   DESIGNER = 1008,
   CUSTOMER_RELATION = 1009,
 }
-/** Identity information stored in localStorage, including user information, permissions and login status */
+/** Identity information stored for the current browser session. */
 type Identity = {
   user: User
   permission: Permission[]
   status: boolean
 }
-/** Authentication Token stored in localStorage, including access token, refresh token and expiration time */
-type AuthToken = {
-  accessToken: string
-  refreshToken: string
-  expireTime: ISODateString
-}
-
 /** Converts a Date to the branded ISO-8601 string type. */
 function toISODateString(date: Date): ISODateString {
   return date.toISOString() as ISODateString
 }
 
-export type { Identity, AuthToken, ISODateString }
+export type { Identity, ISODateString }
 export { Permission }
 export { toISODateString }

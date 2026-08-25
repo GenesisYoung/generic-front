@@ -9,7 +9,8 @@ export interface LoginRequest {
 /** JWT pair returned by the backend on a successful login. */
 export interface TokenPair {
   accessToken: string
-  refreshToken: string
+  /** The backend stores this in an HttpOnly cookie and returns null to JavaScript. */
+  refreshToken: null
 }
 
 /** The authenticated user's profile, as returned by the backend. */
@@ -25,5 +26,4 @@ export interface Identity {
 export interface AuthState {
   identity: Identity | null
   accessToken: string | null
-  refreshToken: string | null
 }

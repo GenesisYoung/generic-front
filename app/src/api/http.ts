@@ -27,15 +27,10 @@ const REFRESH_URL = '/auth/refresh/access'
 // ── Request interceptor ───────────────────────────────────────────────────────
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore()
-  if (config.url === REFRESH_URL && store?.refreshToken) {
-    config.headers.Authorization = `Bearer ${store.refreshToken}`
-    // debugger
-    config.headers['User-Name'] = store.identity?.name
+  if (config.url === REFRESH_URL) {
+    config.headers['X-Refresh-Request'] = '1'
   } else if (store?.accessToken) {
     config.headers.Authorization = `Bearer ${store.accessToken}`
-    // debugger
-    config.headers['User-Name'] = store.identity?.name
-    // if (store.refreshToken) config.headers['Refresh-Token'] = store.refreshToken
   }
   return config
 })
@@ -48,14 +43,7 @@ let waitingQueue: Array<{
 }> = []
 
 http.interceptors.response.use(
-  (resp) => {
-    // Axios lowercases all response header names.
-    const remaining = Number(resp.headers['refresh-token-remaining'])
-    if (Number.isFinite(remaining) && remaining < 1000 * 60 * 60 * 24 * 6) {
-      getAuthStore()?.updateRefreshToken()
-    }
-    return resp
-  },
+  (resp) => resp,
   async (error: AxiosError) => {
     const store = getAuthStore()
     const originalRequest = error.config as InternalAxiosRequestConfig | undefined
@@ -78,7 +66,7 @@ http.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    if (!store?.refreshToken) {
+    if (!store?.identity) {
       store?.logout()
       return Promise.reject(error)
     }

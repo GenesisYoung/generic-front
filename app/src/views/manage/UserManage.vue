@@ -115,6 +115,14 @@
             <v-text-field :label="lang?.userName" v-model="formUser.name" />
             <v-text-field :label="lang?.displayName" v-model="formUser.displayName" />
             <v-text-field :label="lang?.userEmail" v-model="formUser.email" type="email" />
+            <v-text-field
+              v-if="!editingUser"
+              label="Initial password"
+              v-model="formUser.initialPassword"
+              type="password"
+              autocomplete="new-password"
+              hint="At least 12 characters"
+            />
             <!-- <input type="text" hidden :value="syncRoles(formUser.roles)" /> -->
             <v-select
               :label="lang?.userRole"
@@ -207,6 +215,7 @@ interface User {
   birthday: string
   hireDate: string
   departments: number[]
+  initialPassword?: string
 }
 
 const users = ref<User[]>([])
@@ -228,6 +237,7 @@ const formUser = ref<User>({
   birthday: '',
   hireDate: '',
   departments: [],
+  initialPassword: '',
 })
 const deptOptions = ref<{ val: number; title: string }[]>([])
 // Build the role <v-select> options from the Permission enum. A numeric
@@ -305,6 +315,7 @@ const openCreate = () => {
     birthday: '',
     hireDate: '',
     departments: [],
+    initialPassword: '',
   }
   showForm.value = true
 }
@@ -328,6 +339,7 @@ const openEdit = (user: User) => {
     birthday: user.birthday,
     hireDate: user.hireDate,
     departments: user.departments,
+    initialPassword: '',
   }
   showForm.value = true
 }
@@ -353,9 +365,14 @@ const saveUser = async () => {
     birthday: formUser.value.birthday,
     hireDate: formUser.value.hireDate,
     departments: formUser.value.departments,
+    initialPassword: editingUser.value ? undefined : formUser.value.initialPassword,
   }
   if (!payload.name || !payload.email) {
     errorMessage.value = 'Name and email are required'
+    return
+  }
+  if (!editingUser.value && (!payload.initialPassword || payload.initialPassword.length < 12)) {
+    errorMessage.value = 'Initial password must be at least 12 characters'
     return
   }
   try {

@@ -25,7 +25,7 @@ export const useNotificationStore = defineStore('notification', () => {
     const auth = useAuthStore()
     if (!auth.accessToken) return
 
-    websocket.connect(auth.accessToken, auth.identity!.name)
+    websocket.connect(auth.accessToken)
 
     // websocket.subscribe<NotificationDto>('/user/queue/notification', (dto) => {
     //   items.value.unshift(dto)
