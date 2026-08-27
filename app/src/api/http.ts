@@ -1,24 +1,13 @@
-/**
- * Shared Axios instance for all backend calls.
- *
- * Responsibilities:
- * - attach the JWT access token (or the refresh token on refresh calls)
- * - proactively rotate the refresh token when it is close to expiring
- * - on an auth failure, silently refresh the access token and retry the
- *   original request once, queueing concurrent failures during the refresh
- */
-import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
+
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
-    // Marks a request that has already been retried after a token refresh,
-    // so a second failure is not retried again (prevents infinite loops).
+    // Marks a request that has already been replayed after a token refresh.
     _retried?: boolean
   }
 }
 
-// We use a factory function to avoid a circular import between
-// http.ts and auth.ts (the store imports http, http imports the store).
 let getAuthStore: () => ReturnType<typeof import('@/stores/auth').useAuthStore> | null = () => null
 
 export function registerAuthStore(
@@ -33,8 +22,9 @@ const http: AxiosInstance = axios.create({
   withCredentials: true,
 })
 
+const REFRESH_URL = '/auth/refresh/access'
+
 // ── Request interceptor ───────────────────────────────────────────────────────
-// Runs before EVERY request. Attaches the access token if it exists.
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore()
   if ('/auth/refresh/access' === config.url) {
@@ -49,27 +39,28 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 })
 
 // ── Response interceptor ──────────────────────────────────────────────────────
-// Runs after EVERY response.
-// If the server returns 401, attempt a token refresh and retry once.
 let isRefreshing = false
-let waitingQueue: Array<(token: string) => void> = []
+let waitingQueue: Array<{
+  resolve: (token: string) => void
+  reject: (reason: unknown) => void
+}> = []
 
 http.interceptors.response.use(
-  (resp) => {
-    // The backend reports the refresh token's remaining lifetime on every
-    // response; rotate proactively when less than 24h remain.
-    const expires = Number.parseInt(resp.headers['Refresh-Token-Remaining'])
-    if (expires < 1000 * 60 * 60 * 24) {
-      getAuthStore()?.refresh()
-    }
-    return resp
-  },
-  async (error: AxiosResponse) => {
+  (resp) => resp,
+  async (error: AxiosError) => {
     // debugger
     const store = getAuthStore()
-    const originalRequest = error.config
-    // If refresh token expired, then logout
-    if (originalRequest.url?.includes('/auth/refresh/access')) {
+    const originalRequest = error.config as InternalAxiosRequestConfig | undefined
+
+    // Guard 0: no config means we have nothing to replay (request never left).
+    if (!originalRequest) return Promise.reject(error)
+
+    // Guard 1: THE FIX. Anything that is not an auth failure passes straight
+    // through untouched — 500, 404, network timeout, CORS. No refresh, no retry.
+    if (error.response?.status !== 401) return Promise.reject(error)
+
+    // Guard 2: the refresh endpoint itself returned 401 -> refresh token is dead.
+    if (originalRequest.url?.includes(REFRESH_URL)) {
       store?.logout()
       return Promise.reject(error)
     }
@@ -81,32 +72,39 @@ http.interceptors.response.use(
 
     originalRequest._retried = true
 
-    if (!store?.accessToken) {
+    if (!store?.identity) {
       store?.logout()
       return Promise.reject(error)
     }
 
-    // If a refresh is already in progress, queue this request.
-    // This handles the case where multiple requests fail at the same time.
+    // Set the flag now, so both the queued path and the direct path are covered.
+    originalRequest._retried = true
+
     if (isRefreshing) {
-      return new Promise((resolve) => {
-        waitingQueue.push((newToken: string) => {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`
-          resolve(http(originalRequest))
+      return new Promise((resolve, reject) => {
+        waitingQueue.push({
+          resolve: (newToken: string) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`
+            resolve(http(originalRequest))
+          },
+          reject,
         })
       })
     }
 
     isRefreshing = true
-
     try {
       const newAccessToken = await store.refresh()
-      // Retry all queued requests with the new token.
-      waitingQueue.forEach((cb) => cb(newAccessToken!))
+      const queue = waitingQueue
       waitingQueue = []
+      queue.forEach((p) => p.resolve(newAccessToken!))
       originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
       return http(originalRequest)
-    } catch {
+    } catch (refreshError) {
+      const queue = waitingQueue
+      waitingQueue = []
+      // Every queued caller must be settled, or their awaits hang forever.
+      queue.forEach((p) => p.reject(refreshError))
       store.logout()
       return Promise.reject(error)
     } finally {

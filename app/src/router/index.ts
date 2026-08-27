@@ -21,14 +21,14 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('@/views/auth/LoginView.vue'),
-      meta: { requiresAuth: false },
+      meta: { requireAuth: false },
     },
     {
       path: '/',
       alias: '/dashboard',
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requireAuth: true },
     },
     ...manage,
     {
@@ -41,7 +41,8 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
   const tabs = useTabsStore()
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+  // debugger
+  if (to.meta.requireAuth && !auth.isAuthenticated) {
     return { name: 'login' }
   }
 

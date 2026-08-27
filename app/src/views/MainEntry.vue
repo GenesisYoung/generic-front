@@ -36,7 +36,7 @@ const drawer = ref(!mobile.value)
             </v-btn>
           </template>
           <v-list density="comfortable" min-width="180">
-            <v-list-item :title="auth.identity?.displayName ?? auth.identity?.username" disabled />
+            <v-list-item :title="auth.identity?.displayName ?? auth.identity?.name" disabled />
             <v-divider />
             <v-list-item :title="lang?.settings" prepend-icon="mdi-cog-outline" />
             <v-list-item :title="lang?.logout" prepend-icon="mdi-logout" @click="auth.logout" />

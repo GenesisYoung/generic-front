@@ -11,13 +11,13 @@ export const globalUtil = {
    */
   activeDialog: async (
     title: string | undefined,
-    content: string | undefined | unknown,
+    content: unknown,
     icon: string | undefined,
     mode: number = 1,
   ) => {
     const utils = utilStore()
     utils.globalDialogTitle = title
-    utils.globalDialogContent = content
+    utils.globalDialogContent = content == null ? undefined : String(content)
     utils.globalDialogIcon = icon
     utils.globalDialogMode = mode
     utils.globalDialogVisiblity = true

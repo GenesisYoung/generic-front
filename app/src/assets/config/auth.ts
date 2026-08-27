@@ -1,6 +1,6 @@
 /**
  * Authentication domain config: permission codes and the identity/token
- * shapes persisted to localStorage. Kept in sync with the backend's
+ * shapes persisted for the current browser session. Kept in sync with the backend's
  * Permission table (codes 1001–1009).
  */
 
@@ -24,7 +24,7 @@ enum Permission {
   DESIGNER = 1008,
   CUSTOMER_RELATION = 1009,
 }
-/** Identity information stored in localStorage, including user information, permissions and login status */
+/** Identity information stored for the current browser session. */
 type Identity = {
   user: User
   permission: Permission[]
