@@ -15,7 +15,7 @@ export const useAuthStore = defineStore(
     // ── State ─────────────────────────────────────────────────────────────────
     const identity = ref<Identity | null>(null)
     const accessToken = ref<string | null>(null)
-    const refreshToken = ref<string | null>(null)
+    // const refreshToken = ref<string | null>(null)
     const isDevmode = ref(import.meta.env.VITE_APP_DEV_MODE === 'true')
 
     // ── Getters ───────────────────────────────────────────────────────────────
@@ -39,12 +39,14 @@ export const useAuthStore = defineStore(
       if (response.data.status !== 200) {
         if (response.data.status === 401)
           await globalUtil.activeDialog(lang?.loginFailure, response.data.message, undefined, 1)
-        else if (response.data.status == 402)
+        else if (response.data.status === 402)
           await globalUtil.activeDialog(lang?.disabledUser, response.data.message, undefined, 1)
+        return
       }
-      accessToken.value = response.data.object.tokens.accessToken
-      refreshToken.value = response.data.object.tokens.refreshToken
-      identity.value = response.data.object.user
+
+      accessToken.value = response.data.object!.tokens.accessToken
+      identity.value = response.data.object!.user
+      console.log(response.headers.getSetCookie)
       setTimeout(() => {
         window.location.reload()
       }, 200)
@@ -56,9 +58,10 @@ export const useAuthStore = defineStore(
      * Returns the new access token so the interceptor can retry the request.
      */
     async function refresh(): Promise<string | null> {
-      const response = await http.post<{ object: string }>('/auth/refresh/access')
+      const response = await http.post<{ object: { accessToken: string } }>('/auth/refresh/access')
       const data = response.data
-      accessToken.value = data.object
+      // debugger
+      accessToken.value = data.object.accessToken
       return accessToken.value
     }
 
@@ -68,7 +71,7 @@ export const useAuthStore = defineStore(
     function logout(): void {
       identity.value = null
       accessToken.value = null
-      refreshToken.value = null
+      // refreshToken.value = null
       setTimeout(() => {
         window.location.reload()
       }, 50)
@@ -79,31 +82,32 @@ export const useAuthStore = defineStore(
      * Rotates the refresh token itself (long-lived token renewal).
      * On failure all auth state is cleared, forcing a fresh login.
      */
-    async function updateRefreshToken() {
-      const resp = await http.get<{ status: number; message: string; object: string }>(
-        '/api/auth/refresh/refresh',
-      )
-      if (resp.data.status === 200) {
-        refreshToken.value = resp.data.object
-      } else {
-        accessToken.value = null
-        refreshToken.value = null
-        identity.value = null
-        refreshToken.value = resp.data.object
-        throw new Error('Refresh token failed to update')
-      }
-    }
+    // async function updateRefreshToken() {
+    //   const resp = await http.get<{ status: number; message: string; object: string }>(
+    //     '/api/auth/refresh/refresh',
+    //   )
+    //   if (resp.data.status != 200) // {
+    //   //   refreshToken.value = resp.data.object
+    //   // } else
+    //   {
+    //     accessToken.value = null
+    //     // refreshToken.value = null
+    //     identity.value = null
+    //     // refreshToken.value = resp.data.object
+    //     throw new Error('Refresh token failed to update')
+    //   }
+    // }
 
     return {
       identity,
       accessToken,
-      refreshToken,
+      // refreshToken,
       isAuthenticated,
       isDevmode,
       login,
       refresh,
       logout,
-      updateRefreshToken,
+      // updateRefreshToken,
     }
   },
   {
@@ -111,7 +115,7 @@ export const useAuthStore = defineStore(
     // The access token is short-lived but we persist it so the user
     // survives a page refresh within the active session.
     persist: {
-      pick: ['accessToken', 'refreshToken', 'identity'],
+      pick: ['accessToken', 'identity'],
     },
   },
 )

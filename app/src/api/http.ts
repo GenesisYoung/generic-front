@@ -37,12 +37,13 @@ const http: AxiosInstance = axios.create({
 // Runs before EVERY request. Attaches the access token if it exists.
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore()
-  if ('/auth/refresh/access' === config.url && store?.refreshToken) {
-    config.headers.Authorization = `Bearer ${store.refreshToken}`
-    config.headers['Refresh-Token'] = store.refreshToken
+  if ('/auth/refresh/access' === config.url) {
+    config.headers['X-Refresh-Request'] = 1
+    config.headers.Authorization = `Bearer ${store!.accessToken}`
+    // config.headers['Refresh-Token'] = store.refreshToken
   } else if (store?.accessToken) {
     config.headers.Authorization = `Bearer ${store.accessToken}`
-    config.headers['Refresh-Token'] = store.refreshToken
+    // config.headers['Refresh-Token'] = store.refreshToken
   }
   return config
 })
@@ -64,6 +65,7 @@ http.interceptors.response.use(
     return resp
   },
   async (error: AxiosResponse) => {
+    // debugger
     const store = getAuthStore()
     const originalRequest = error.config
     // If refresh token expired, then logout
@@ -71,9 +73,15 @@ http.interceptors.response.use(
       store?.logout()
       return Promise.reject(error)
     }
+    // If the request is not a 403, just let it go, 403 is the only error we can recover from by refreshing the token.
+    if (error.status != 403 && error?.status != 401) {
+      const err = { ...error }
+      return Promise.reject(err.response.data.message)
+    }
+
     originalRequest._retried = true
 
-    if (!store?.refreshToken) {
+    if (!store?.accessToken) {
       store?.logout()
       return Promise.reject(error)
     }

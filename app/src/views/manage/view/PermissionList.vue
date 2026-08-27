@@ -25,7 +25,6 @@ const permissionsRespsonse = ref<
 >([])
 const showForm = ref(false)
 const selections = ref([])
-const rootSelections = ref([])
 const permissionRoot = ref(new Set<string>())
 const permission = ref(
   new Map<string, { id: number; permissionCode: string; val: number; show: string }[]>(),
