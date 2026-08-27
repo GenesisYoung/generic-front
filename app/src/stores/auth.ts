@@ -3,119 +3,122 @@ import { lan } from '@/lang/china_zh'
 import type { Identity, TokenPair } from '@/types/auth'
 import { globalUtil } from '@/utils/util'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 type Lan = Record<string, string>
 const lang: Lan = lan
-export const useAuthStore = defineStore(
-  'auth',
-  () => {
-    const router = useRouter()
+export const useAuthStore = defineStore('auth', () => {
+  const router = useRouter()
+  type StoredAuth = {
+    identity: Identity | null
+    accessToken: string | null
+  }
+  let restored: StoredAuth | null = null
+  try {
+    const stored = localStorage.getItem('auth-session')
+    restored = stored ? (JSON.parse(stored) as StoredAuth) : null
+  } catch {
+    localStorage.removeItem('auth-session')
+  }
 
-    // ── State ─────────────────────────────────────────────────────────────────
-    const identity = ref<Identity | null>(null)
-    const accessToken = ref<string | null>(null)
-    // const refreshToken = ref<string | null>(null)
-    const isDevmode = ref(import.meta.env.VITE_APP_DEV_MODE === 'true')
+  // ── State ─────────────────────────────────────────────────────────────────
+  const identity = ref<Identity | null>(restored?.identity ?? null)
+  const accessToken = ref<string | null>(restored?.accessToken ?? null)
+  const isDevmode = ref(import.meta.env.VITE_APP_DEV_MODE === 'true')
 
-    // ── Getters ───────────────────────────────────────────────────────────────
-    const isAuthenticated = computed(() => !!accessToken.value && !!identity.value)
+  // ── Getters ───────────────────────────────────────────────────────────────
+  const isAuthenticated = computed(() => !!accessToken.value && !!identity.value)
 
-    // ── Actions ───────────────────────────────────────────────────────────────
-
-    /**
-     * Called when the user submits the login form.
-     * The backend returns an access token, a refresh token, and user identity.
-     */
-    async function login(username: string, password: string): Promise<void> {
-      const response = await http.post<{
-        status: number
-        object: { tokens: TokenPair; user: Identity }
-        message: string
-      }>('/auth/login', {
-        username,
-        password,
-      })
-      if (response.data.status !== 200) {
-        if (response.data.status === 401)
-          await globalUtil.activeDialog(lang?.loginFailure, response.data.message, undefined, 1)
-        else if (response.data.status === 402)
-          await globalUtil.activeDialog(lang?.disabledUser, response.data.message, undefined, 1)
-        return
-      }
-
-      accessToken.value = response.data.object!.tokens.accessToken
-      identity.value = response.data.object!.user
-      console.log(response.headers.getSetCookie)
-      setTimeout(() => {
-        window.location.reload()
-      }, 200)
-      await router.push('/')
-    }
-
-    /**
-     * Called automatically by the Axios interceptor when a 401 is received.
-     * Returns the new access token so the interceptor can retry the request.
-     */
-    async function refresh(): Promise<string | null> {
-      const response = await http.post<{ object: { accessToken: string } }>('/auth/refresh/access')
-      const data = response.data
-      // debugger
-      accessToken.value = data.object.accessToken
-      return accessToken.value
-    }
-
-    /**
-     * Clears all state and sends the user to the login page.
-     */
-    function logout(): void {
-      identity.value = null
-      accessToken.value = null
-      // refreshToken.value = null
-      setTimeout(() => {
-        window.location.reload()
-      }, 50)
-      router.push('/login')
-    }
-
-    /**
-     * Rotates the refresh token itself (long-lived token renewal).
-     * On failure all auth state is cleared, forcing a fresh login.
-     */
-    // async function updateRefreshToken() {
-    //   const resp = await http.get<{ status: number; message: string; object: string }>(
-    //     '/api/auth/refresh/refresh',
-    //   )
-    //   if (resp.data.status != 200) // {
-    //   //   refreshToken.value = resp.data.object
-    //   // } else
-    //   {
-    //     accessToken.value = null
-    //     // refreshToken.value = null
-    //     identity.value = null
-    //     // refreshToken.value = resp.data.object
-    //     throw new Error('Refresh token failed to update')
-    //   }
-    // }
-
-    return {
-      identity,
-      accessToken,
-      // refreshToken,
-      isAuthenticated,
-      isDevmode,
-      login,
-      refresh,
-      logout,
-      // updateRefreshToken,
-    }
-  },
-  {
-    // pinia-plugin-persistedstate: only persist the tokens and identity.
-    // The access token is short-lived but we persist it so the user
-    // survives a page refresh within the active session.
-    persist: {
-      pick: ['accessToken', 'identity'],
+  watch(
+    [identity, accessToken],
+    () => {
+      localStorage.setItem(
+        'auth-session',
+        JSON.stringify({
+          identity: identity.value,
+          accessToken: accessToken.value,
+        }),
+      )
     },
-  },
-)
+    { deep: true },
+  )
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+
+  /**
+   * Called when the user submits the login form.
+   * The backend returns an access token, a refresh token, and user identity.
+   */
+  async function login(username: string, password: string): Promise<void> {
+    const response = await http.post<{
+      status: number
+      object: { tokens: TokenPair; user: Identity }
+      message: string
+    }>('/auth/login', {
+      username,
+      password,
+    })
+    if (response.data.status !== 200) {
+      if (response.data.status === 401)
+        await globalUtil.activeDialog(lang?.loginFailure, response.data.message, undefined, 1)
+      else if (response.data.status === 402)
+        await globalUtil.activeDialog(lang?.disabledUser, response.data.message, undefined, 1)
+      return
+    }
+
+    accessToken.value = response.data.object!.tokens.accessToken
+    identity.value = response.data.object!.user
+    console.log(response.headers.getSetCookie)
+    setTimeout(() => {
+      window.location.reload()
+    }, 200)
+    await router.push('/')
+  }
+
+  /**
+   * Called automatically by the Axios interceptor when a 401 is received.
+   * Returns the new access token so the interceptor can retry the request.
+   */
+  async function refresh(): Promise<string | null> {
+    const response = await http.post<{
+      status: number
+      message: string
+      object: { accessToken: TokenPair | null }
+    }>('/auth/refresh/access')
+    const data = response.data
+    // debugger
+    if (data.status !== 200 || !data.object) {
+      throw new Error(data.message)
+    }
+    accessToken.value = data.object.accessToken.accessToken
+    return accessToken.value
+  }
+
+  /**
+   * Clears all state and sends the user to the login page.
+   */
+  function logout(): void {
+    if (accessToken.value) {
+      const token = accessToken.value
+      void http
+        .post('/auth/logout', undefined, { headers: { Authorization: `Bearer ${token}` } })
+        .catch(() => undefined)
+    }
+    identity.value = null
+    accessToken.value = null
+    setTimeout(() => {
+      window.location.reload()
+    }, 50)
+    router.push('/login')
+  }
+
+  return {
+    identity,
+    accessToken,
+    isAuthenticated,
+    isDevmode,
+    login,
+    refresh,
+    logout,
+  }
+})

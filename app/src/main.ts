@@ -1,7 +1,6 @@
-import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 /**
  * Application bootstrap: creates the Vue app and wires up Pinia (with
- * localStorage persistence), Vue Router, and Vuetify (MDI icons +
+ * session-scoped authentication state), Vue Router, and Vuetify (MDI icons +
  * light/dark violet themes, dark by default).
  */
 import '@mdi/font/css/materialdesignicons.css'
@@ -23,7 +22,6 @@ import { useAuthStore } from './stores/auth'
 import { darkTheme, lightTheme } from './theme/primary'
 
 const pinia = createPinia()
-pinia.use(piniaPluginPersistedstate)
 
 const vuetify = createVuetify({
   icons: {
