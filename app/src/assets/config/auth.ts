@@ -30,11 +30,17 @@ type Identity = {
   permission: Permission[]
   status: boolean
 }
+/** Authentication Token stored in localStorage, including access token, refresh token and expiration time */
+type AuthToken = {
+  accessToken: string
+  // refreshToken: string
+  expireTime: ISODateString
+}
+
 /** Converts a Date to the branded ISO-8601 string type. */
 function toISODateString(date: Date): ISODateString {
   return date.toISOString() as ISODateString
 }
 
-export type { Identity, ISODateString }
-export { Permission }
-export { toISODateString }
+export { Permission, toISODateString }
+export type { AuthToken, Identity, ISODateString }

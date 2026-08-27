@@ -27,10 +27,13 @@ const REFRESH_URL = '/auth/refresh/access'
 // ── Request interceptor ───────────────────────────────────────────────────────
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore()
-  if (config.url === REFRESH_URL) {
-    config.headers['X-Refresh-Request'] = '1'
+  if ('/auth/refresh/access' === config.url) {
+    config.headers['X-Refresh-Request'] = 1
+    config.headers.Authorization = `Bearer ${store!.accessToken}`
+    // config.headers['Refresh-Token'] = store.refreshToken
   } else if (store?.accessToken) {
     config.headers.Authorization = `Bearer ${store.accessToken}`
+    // config.headers['Refresh-Token'] = store.refreshToken
   }
   return config
 })
@@ -45,6 +48,7 @@ let waitingQueue: Array<{
 http.interceptors.response.use(
   (resp) => resp,
   async (error: AxiosError) => {
+    // debugger
     const store = getAuthStore()
     const originalRequest = error.config as InternalAxiosRequestConfig | undefined
 
@@ -60,11 +64,13 @@ http.interceptors.response.use(
       store?.logout()
       return Promise.reject(error)
     }
-
-    // Guard 3: we already replayed this request once and it 401'd again.
-    if (originalRequest._retried) {
-      return Promise.reject(error)
+    // If the request is not a 403, just let it go, 403 is the only error we can recover from by refreshing the token.
+    if (error.status != 403 && error?.status != 401) {
+      const err = { ...error }
+      return Promise.reject(err.response.data.message)
     }
+
+    originalRequest._retried = true
 
     if (!store?.identity) {
       store?.logout()

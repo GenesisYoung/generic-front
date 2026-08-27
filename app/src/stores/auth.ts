@@ -47,8 +47,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Called when the user submits the login form.
-   * The backend returns an access token and user identity; the refresh token is
-   * stored by the browser as an HttpOnly cookie.
+   * The backend returns an access token, a refresh token, and user identity.
    */
   async function login(username: string, password: string): Promise<void> {
     const response = await http.post<{
@@ -62,12 +61,14 @@ export const useAuthStore = defineStore('auth', () => {
     if (response.data.status !== 200) {
       if (response.data.status === 401)
         await globalUtil.activeDialog(lang?.loginFailure, response.data.message, undefined, 1)
-      else if (response.data.status == 402)
+      else if (response.data.status === 402)
         await globalUtil.activeDialog(lang?.disabledUser, response.data.message, undefined, 1)
-      throw new Error(response.data.message)
+      return
     }
-    accessToken.value = response.data.object.tokens.accessToken
-    identity.value = response.data.object.user
+
+    accessToken.value = response.data.object!.tokens.accessToken
+    identity.value = response.data.object!.user
+    console.log(response.headers.getSetCookie)
     setTimeout(() => {
       window.location.reload()
     }, 200)
@@ -82,13 +83,14 @@ export const useAuthStore = defineStore('auth', () => {
     const response = await http.post<{
       status: number
       message: string
-      object: TokenPair | null
+      object: { accessToken: TokenPair | null }
     }>('/auth/refresh/access')
     const data = response.data
+    // debugger
     if (data.status !== 200 || !data.object) {
       throw new Error(data.message)
     }
-    accessToken.value = data.object.accessToken
+    accessToken.value = data.object.accessToken.accessToken
     return accessToken.value
   }
 
