@@ -1,4 +1,3 @@
-import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 /**
  * Application bootstrap: creates the Vue app and wires up Pinia (with
  * session-scoped authentication state), Vue Router, and Vuetify (MDI icons +
