@@ -83,14 +83,14 @@ export const useAuthStore = defineStore('auth', () => {
     const response = await http.post<{
       status: number
       message: string
-      object: { accessToken: TokenPair | null }
+      object: { accessToken: string | null }
     }>('/auth/refresh/access')
     const data = response.data
     // debugger
     if (data.status !== 200 || !data.object) {
       throw new Error(data.message)
     }
-    accessToken.value = data.object.accessToken.accessToken
+    accessToken.value = data.object.accessToken
     return accessToken.value
   }
 
