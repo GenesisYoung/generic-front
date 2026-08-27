@@ -38,12 +38,12 @@ const http: AxiosInstance = axios.create({
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore()
   if ('/auth/refresh/access' === config.url) {
+    // debugger
     config.headers['X-Refresh-Request'] = 1
     config.headers.Authorization = `Bearer ${store!.accessToken}`
-    // config.headers['Refresh-Token'] = store.refreshToken
   } else if (store?.accessToken) {
+    // debugger
     config.headers.Authorization = `Bearer ${store.accessToken}`
-    // config.headers['Refresh-Token'] = store.refreshToken
   }
   return config
 })
@@ -77,6 +77,12 @@ http.interceptors.response.use(
     if (error.status != 403 && error?.status != 401) {
       const err = { ...error }
       return Promise.reject(err.response.data.message)
+    }
+
+    // Guard 3: the refresh endpoint itself returned 401 -> refresh token is dead.
+    if (originalRequest.url?.includes(REFRESH_URL)) {
+      store?.logout()
+      return Promise.reject(error)
     }
 
     originalRequest._retried = true
