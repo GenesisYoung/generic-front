@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./mvnw -q -o compile)",
+      "Bash(./mvnw -q compile)",
+      "Bash(gh pr create --base main --head feat/role-permission-department-allocation --title 'feat: role↔permission allocation + department management' --body ' *)"
+    ]
+  }
+}
