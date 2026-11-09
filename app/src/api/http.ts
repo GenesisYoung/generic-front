@@ -1,5 +1,7 @@
 import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
+import { lan } from '@/lang/china_zh'
+import { globalUtil } from '@/utils/util'
 
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
@@ -55,6 +57,14 @@ http.interceptors.response.use(
     // Guard 0: no config means we have nothing to replay (request never left).
     if (!originalRequest) return Promise.reject(error)
 
+    // Permission denied: the token is fine, refreshing would not help. Tell the
+    // user and refresh the cached permissions so the UI hides what they lost.
+    if (error.response?.status === 403) {
+      void globalUtil.activeDialog(lan.noPermission, lan.noPermissionContent, 'mdi-lock', 1)
+      void store?.loadPermissions()
+      return Promise.reject(error)
+    }
+
     // Guard 1: THE FIX. Anything that is not an auth failure passes straight
     // through untouched — 500, 404, network timeout, CORS. No refresh, no retry.
     if (error.response?.status !== 401) return Promise.reject(error)
@@ -64,12 +74,6 @@ http.interceptors.response.use(
       store?.logout()
       return Promise.reject(error)
     }
-    // If the request is not a 403, just let it go, 403 is the only error we can recover from by refreshing the token.
-    if (error.status != 403 && error?.status != 401) {
-      const err = { ...error }
-      return Promise.reject(err.response.data.message)
-    }
-
     // Guard 3: the refresh endpoint itself returned 401 -> refresh token is dead.
     if (originalRequest.url?.includes(REFRESH_URL)) {
       store?.logout()

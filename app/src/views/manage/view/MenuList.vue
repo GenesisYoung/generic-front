@@ -9,6 +9,8 @@
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
+import { Perm } from '@/assets/config/auth'
+import { useAuthStore } from '@/stores/auth'
 import utilStore from '@/stores/utils'
 import { globalUtil } from '@/utils/util'
 import { inject, onMounted, ref } from 'vue'
@@ -16,6 +18,7 @@ import { inject, onMounted, ref } from 'vue'
 // Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lan: Lan | undefined = inject('lan')
+const auth = useAuthStore()
 
 interface MenuItem {
   id: number | null
@@ -123,7 +126,9 @@ onMounted(async () => {
 <template>
   <div class="page">
     <div class="toolbar" style="justify-content: flex-end">
-      <v-btn color="primary" @click="addRecord">{{ lan?.addMenu }}</v-btn>
+      <v-btn v-if="auth.can(Perm.menus.create)" color="primary" @click="addRecord">{{
+        lan?.addMenu
+      }}</v-btn>
     </div>
     <div v-if="menus.length > 0" class="table-wrapper">
       <v-table>
@@ -153,10 +158,22 @@ onMounted(async () => {
               <v-chip :color="item.color" size="small">{{ item.color }}</v-chip>
             </td>
             <td class="actions-col">
-              <v-btn color="indigo" size="small" class="mr-2" @click="editRecord(item)">
+              <v-btn
+                v-if="auth.can(Perm.menus.update)"
+                color="indigo"
+                size="small"
+                class="mr-2"
+                @click="editRecord(item)"
+              >
                 {{ lan?.edit }}
               </v-btn>
-              <v-btn color="red" size="small" @click="remove(item)">{{ lan?.delete }}</v-btn>
+              <v-btn
+                v-if="auth.can(Perm.menus.delete)"
+                color="red"
+                size="small"
+                @click="remove(item)"
+                >{{ lan?.delete }}</v-btn
+              >
             </td>
           </tr>
         </tbody>
@@ -173,13 +190,13 @@ onMounted(async () => {
             <v-text-field :label="lan?.menuIcon" v-model="formData.icon" />
             <v-text-field :label="lan?.menuRoute" v-model="formData.route" />
             <v-text-field :label="lan?.menuColor" v-model="formData.color" />
-            <v-select
+            <!-- <v-select
               :label="lan?.defaultPermission"
               :items="menuPermissions"
               v-model="formData.permission"
               item-title="permissionCode"
               item-value="id"
-            ></v-select>
+            ></v-select> -->
             <div class="color-select-bar mb-2">
               <v-chip color="indigo" class="mr-2" @click="updateColor('indigo')">indigo</v-chip
               ><v-chip

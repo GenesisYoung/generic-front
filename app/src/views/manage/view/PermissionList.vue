@@ -8,6 +8,8 @@
  * `permission` maps each root to its child entries, rendered as
  * checkbox-selectable v-list-groups.
  */
+import { Perm } from '@/assets/config/auth'
+import { useAuthStore } from '@/stores/auth'
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
@@ -17,6 +19,7 @@ import { inject, onMounted, ref } from 'vue'
 // Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lan: Lan | undefined = inject('lan')
+const auth = useAuthStore()
 const currentPage = ref(1)
 const pageSize = ref(10)
 const pageCount = ref(0)
@@ -131,8 +134,16 @@ onMounted(async () => {
 <template>
   <div class="page">
     <div class="toolbar">
-      <v-btn color="primary" @click="addRecord">{{ lan?.addPermission }}</v-btn>
-      <v-btn color="red" variant="tonal" @click="remove">{{ lan?.removePermission }}</v-btn>
+      <v-btn v-if="auth.can(Perm.permissions.create)" color="primary" @click="addRecord">{{
+        lan?.addPermission
+      }}</v-btn>
+      <v-btn
+        v-if="auth.can(Perm.permissions.delete)"
+        color="red"
+        variant="tonal"
+        @click="remove"
+        >{{ lan?.removePermission }}</v-btn
+      >
       <v-text-field
         :label="lan?.name"
         append-icon="mdi-magnify"

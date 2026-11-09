@@ -1,4 +1,5 @@
 import http from '@/api/http'
+import { hasPermission, type PermissionSet } from '@/assets/config/auth'
 import { lan } from '@/lang/china_zh'
 import type { Identity, TokenPair } from '@/types/auth'
 import { globalUtil } from '@/utils/util'
@@ -12,6 +13,7 @@ export const useAuthStore = defineStore('auth', () => {
   type StoredAuth = {
     identity: Identity | null
     accessToken: string | null
+    permissions?: PermissionSet | null
   }
   let restored: StoredAuth | null = null
   try {
@@ -24,26 +26,61 @@ export const useAuthStore = defineStore('auth', () => {
   // ── State ─────────────────────────────────────────────────────────────────
   const identity = ref<Identity | null>(restored?.identity ?? null)
   const accessToken = ref<string | null>(restored?.accessToken ?? null)
+  // Cached so the UI renders immediately on reload; refreshed by loadPermissions().
+  const permissions = ref<PermissionSet | null>(restored?.permissions ?? null)
+  const permissionsLoaded = ref(false)
   const isDevmode = ref(import.meta.env.VITE_APP_DEV_MODE === 'true')
 
   // ── Getters ───────────────────────────────────────────────────────────────
   const isAuthenticated = computed(() => !!accessToken.value && !!identity.value)
 
   watch(
-    [identity, accessToken],
+    [identity, accessToken, permissions],
     () => {
       localStorage.setItem(
         'auth-session',
         JSON.stringify({
           identity: identity.value,
           accessToken: accessToken.value,
+          permissions: permissions.value,
         }),
       )
     },
     { deep: true },
   )
 
+  /** True when the user may perform `code` (UI hint only; the backend re-checks). */
+  function can(code: string): boolean {
+    return hasPermission(permissions.value, code)
+  }
+
+  /** True when the user holds at least one of `codes`. */
+  function canAny(...codes: string[]): boolean {
+    return codes.some(can)
+  }
+
   // ── Actions ───────────────────────────────────────────────────────────────
+
+  /**
+   * Fetches the user's current permission codes. Called once per page load by
+   * the router guard and again whenever the window regains focus, so grants and
+   * revocations made by an admin show up without logging out.
+   */
+  async function loadPermissions(): Promise<void> {
+    if (!accessToken.value) return
+    try {
+      const response = await http.get<{ status: number; object: PermissionSet }>(
+        '/users/permissions',
+      )
+      if (response.data.status === 200 && response.data.object) {
+        permissions.value = response.data.object
+      }
+    } catch {
+      // Keep the cached set; a 401 here is handled by the interceptor.
+    } finally {
+      permissionsLoaded.value = true
+    }
+  }
 
   /**
    * Called when the user submits the login form.
@@ -106,6 +143,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
     identity.value = null
     accessToken.value = null
+    permissions.value = null
+    permissionsLoaded.value = false
     setTimeout(() => {
       window.location.reload()
     }, 50)
@@ -115,8 +154,13 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     identity,
     accessToken,
+    permissions,
+    permissionsLoaded,
     isAuthenticated,
     isDevmode,
+    can,
+    canAny,
+    loadPermissions,
     login,
     refresh,
     logout,

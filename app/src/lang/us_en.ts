@@ -79,6 +79,8 @@ const mapping: Record<string, string> = {
   permissionName: 'Permission Name',
   permissionDescription: 'Permission Description',
   noPermissionFound: 'No permissions found',
+  noPermission: 'Access denied',
+  noPermissionContent: 'You do not have permission for this action. Contact your administrator.',
   actionList: 'Action List',
   menuList: 'Menu List',
   name: 'Name',

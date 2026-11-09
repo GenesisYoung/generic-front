@@ -13,6 +13,8 @@
  * Permission toggles are optimistic: the switch flips immediately and is
  * rolled back with an error dialog if the backend rejects the change.
  */
+import { Perm } from '@/assets/config/auth'
+import { useAuthStore } from '@/stores/auth'
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
@@ -22,6 +24,7 @@ import { inject, onMounted, ref } from 'vue'
 // Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lan: Lan | undefined = inject('lan')
+const auth = useAuthStore()
 
 const PAGE_SIZE = 20
 
@@ -155,7 +158,14 @@ onMounted(async () => {
       <div class="rail surface-card pa-0">
         <div class="rail-head">
           <span class="rail-label">{{ lan?.roleList }}</span>
-          <v-btn icon="mdi-plus" size="small" variant="tonal" color="primary" @click="addRole" />
+          <v-btn
+            v-if="auth.can(Perm.roles.create)"
+            icon="mdi-plus"
+            size="small"
+            variant="tonal"
+            color="primary"
+            @click="addRole"
+          />
         </div>
         <v-list v-if="roles.length > 0" density="compact" nav>
           <v-list-item
@@ -168,6 +178,7 @@ onMounted(async () => {
           >
             <template #append>
               <v-btn
+                v-if="auth.can(Perm.roles.delete)"
                 icon="mdi-minus"
                 size="x-small"
                 variant="text"
@@ -208,8 +219,12 @@ onMounted(async () => {
                 <span class="status-pill mr-2" :class="perm.granted ? 'success' : 'neutral'">
                   {{ perm.granted ? lan?.processed : lan?.notGranted }}
                 </span>
+                <!-- Granting needs the permission itself too: nobody hands out what they lack. -->
                 <v-switch
                   :model-value="perm.granted"
+                  :disabled="
+                    !auth.can(Perm.roles.update) || (!perm.granted && !auth.can(perm.permissionCode))
+                  "
                   color="success"
                   hide-details
                   density="compact"

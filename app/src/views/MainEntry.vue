@@ -7,7 +7,7 @@
 import AppNavigation from '@/assets/components/AppNavigation.vue'
 import TabMenu from '@/assets/components/TabMenu.vue'
 import { useAuthStore } from '@/stores/auth'
-import { inject, ref } from 'vue'
+import { inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useDisplay } from 'vuetify'
 
 // Active i18n string map, provided by the app root.
@@ -17,6 +17,11 @@ const auth = useAuthStore()
 const { mobile } = useDisplay()
 // Drawer starts open on desktop, closed on mobile.
 const drawer = ref(!mobile.value)
+
+// Pick up permission changes made by an admin while this tab was in the background.
+const refreshPermissions = () => void auth.loadPermissions()
+onMounted(() => window.addEventListener('focus', refreshPermissions))
+onBeforeUnmount(() => window.removeEventListener('focus', refreshPermissions))
 </script>
 
 <template>

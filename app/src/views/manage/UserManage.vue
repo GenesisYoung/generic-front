@@ -5,7 +5,9 @@
         <h1>{{ lang?.userManage }}</h1>
         <p>{{ lang?.userManageDescription }}</p>
       </div>
-      <v-btn color="primary" @click="openCreate">{{ lang?.addUser }}</v-btn>
+      <v-btn v-if="auth.can(Perm.users.create)" color="primary" @click="openCreate">{{
+        lang?.addUser
+      }}</v-btn>
     </header>
 
     <v-alert
@@ -50,7 +52,7 @@
             <td :title="user.displayName">{{ user.displayName }}</td>
             <td style="min-width: 150px">
               <v-select
-                :model-value="user.roles"
+                :model-value="user.roles.map((r) => r.value)"
                 :items="roles"
                 item-title="title"
                 item-value="value"
@@ -83,6 +85,7 @@
             </td>
             <td class="actions-col">
               <v-btn
+                v-if="auth.can(Perm.users.update)"
                 size="small"
                 class="mr-2"
                 color="indigo"
@@ -91,7 +94,13 @@
               >
                 {{ lang?.edit }}
               </v-btn>
-              <v-btn size="small" color="red" variant="flat" @click="deleteUser(user)">
+              <v-btn
+                v-if="auth.can(Perm.users.delete)"
+                size="small"
+                color="red"
+                variant="flat"
+                @click="deleteUser(user)"
+              >
                 {{ lang?.delete }}
               </v-btn>
             </td>
@@ -126,7 +135,7 @@
             <!-- <input type="text" hidden :value="syncRoles(formUser.roles)" /> -->
             <v-select
               :label="lang?.userRole"
-              v-model="formUser.roles"
+              v-model="formRoles"
               :items="roles"
               item-title="title"
               item-value="value"
@@ -190,7 +199,8 @@
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
-import { Permission } from '@/assets/config/auth'
+import { Perm } from '@/assets/config/auth'
+import { useAuthStore } from '@/stores/auth'
 import utilStore from '@/stores/utils'
 import type { SelectItem } from '@/types/interface'
 import { globalUtil } from '@/utils/util'
@@ -199,6 +209,7 @@ import { computed, inject, onMounted, ref } from 'vue'
 // Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
+const auth = useAuthStore()
 
 /** Row shape for the user table (mirrors the backend UserDTO). */
 interface User {
@@ -206,7 +217,7 @@ interface User {
   name: string
   displayName: string
   email: string
-  roles: Array<{ title: string; roleId: number; userId: number; value: number }> // Permission codes (numbers, not strings)
+  roles: Array<{ title: string; roleId: number; userId: number; value: number }> // value = role_tb.val
   roleStr: string // human-readable join of the role names, for display
   active: boolean
   isEnabled: number
@@ -240,24 +251,13 @@ const formUser = ref<User>({
   initialPassword: '',
 })
 const deptOptions = ref<{ val: number; title: string }[]>([])
-// Build the role <v-select> options from the Permission enum. A numeric
-// TS enum contains reverse mappings (value → name), so keep only the
-// entries whose value is a number.
+// Role <v-select> options, loaded from the backend. The value is the role's
+// `val` code, which is what the backend expects in `roleList`.
 const roles = ref<SelectItem[]>([])
-{
-  const options: SelectItem[] = []
-  for (const p in Permission) {
-    const val = Permission[p]
-    if (typeof val === 'number') {
-      options.push({ title: p, value: val })
-    }
-  }
-  roles.value = options
-}
+// Role codes selected in the create/edit form.
+const formRoles = ref<number[]>([])
 const currentPage = ref(1)
 const pageSize = ref(5)
-
-roles.value.sort((a, b) => a.title.localeCompare(b.title))
 
 const apiBase = (import.meta.env.VITE_BASE_URL ?? '').replace(/\/$/, '')
 
@@ -280,10 +280,7 @@ const fetchUsers = async () => {
     const userList: User[] = resp.data.content
     userList.forEach((e) => {
       e.roles = e.roles.map((r) => r) // ✅ ensure numbers
-      e.roleStr = e.roles
-        .map((p) => Permission[p.value])
-        .filter(Boolean)
-        .join(' ')
+      e.roleStr = e.roles.map((r) => r.title).join(' ')
     })
     users.value = userList
     totalElements.value = resp.data.totalElements
@@ -294,20 +291,28 @@ const fetchUsers = async () => {
   }
 }
 const fetchOptions = async () => {
-  const resp = await http.get('/admin/departments/dept/options')
-  deptOptions.value = resp.data.object
+  const [deptResp, roleResp] = await Promise.all([
+    http.get('/admin/departments/dept/options'),
+    http.get('/admin/roles/fetch?page=0&size=200'),
+  ])
+  deptOptions.value = deptResp.data.object
+  const roleList: Array<{ roleName: string; val: number }> = roleResp.data.content ?? []
+  roles.value = roleList
+    .map((r) => ({ title: r.roleName, value: r.val }))
+    .sort((a, b) => a.title.localeCompare(b.title))
 }
 
-/** Opens the form in create mode with a fresh default user (ROOT role). */
+/** Opens the form in create mode with a fresh user and no roles. */
 const openCreate = () => {
   editingUser.value = null
+  formRoles.value = []
   formUser.value = {
     id: 0,
     name: '',
     displayName: '',
     email: '',
     roles: [],
-    roleStr: 'ROOT',
+    roleStr: '',
     active: true,
     isEnabled: 1,
     realName: '',
@@ -322,16 +327,14 @@ const openCreate = () => {
 /** Opens the form in edit mode, copying the row so edits can be cancelled. */
 const openEdit = (user: User) => {
   editingUser.value = user
+  formRoles.value = user.roles.map((r) => r.value)
   formUser.value = {
     id: user.id,
     name: user.name,
     displayName: user.displayName,
     email: user.email,
     roles: user.roles,
-    roleStr: user.roles
-      .map((p) => Permission[p.value])
-      .filter(Boolean)
-      .join(','),
+    roleStr: user.roles.map((r) => r.title).join(','),
     active: user.active,
     isEnabled: 1,
     realName: user.realName,
@@ -357,7 +360,7 @@ const saveUser = async () => {
     name: formUser.value.name.trim(),
     displayName: formUser.value.displayName.trim(),
     email: formUser.value.email.trim(),
-    roleList: formUser.value.roles.map((ele) => ele.roleId),
+    roleList: formRoles.value,
     active: formUser.value.active,
     isEnabled: 1,
     realName: formUser.value.realName,
@@ -384,6 +387,12 @@ const saveUser = async () => {
     if (!response.data) {
       throw new Error('Save failed')
     }
+    // Refusals (e.g. assigning a role you may not grant) come back as HTTP 200
+    // with a non-200 code in the body.
+    if (response.data.code !== undefined && response.data.code !== 200) {
+      globalUtil.activeDialog(lang?.saveFail, response.data.message, undefined, 1)
+      return
+    }
     await fetchUsers()
     closeForm()
   } catch (error) {
@@ -403,8 +412,15 @@ const deleteUser = async (user: User) => {
     const response = await http.delete(`${apiBase}/root/delete/${user.id}`)
     if (response.data.code === 202) {
       await globalUtil.activeDialog(lang?.deleteFail, lang?.cantDeleteRoot, undefined, 1)
+      return
     } else if (response.data.code != 200) {
-      await globalUtil.activeDialog(lang?.deleteFail, lang?.unexpecetdError, undefined, 1)
+      await globalUtil.activeDialog(
+        lang?.deleteFail,
+        response.data.message ?? lang?.unexpecetdError,
+        undefined,
+        1,
+      )
+      return
     }
     users.value = users.value.filter((u) => u.id !== user.id)
   } catch (error) {

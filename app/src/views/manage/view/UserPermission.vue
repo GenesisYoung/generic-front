@@ -10,6 +10,8 @@
  * with an error dialog if the backend rejects the change.
  * Sibling view: ThroughPermission.vue (same data, permission-centric).
  */
+import { Perm } from '@/assets/config/auth'
+import { useAuthStore } from '@/stores/auth'
 import http from '@/api/http'
 import { globalUtil } from '@/utils/util'
 import { computed, inject, onMounted, ref } from 'vue'
@@ -17,6 +19,7 @@ import { computed, inject, onMounted, ref } from 'vue'
 // Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lan: Lan | undefined = inject('lan')
+const auth = useAuthStore()
 
 interface MenuItem {
   id: number
@@ -180,6 +183,7 @@ onMounted(async () => {
                 </span>
                 <v-switch
                   :model-value="user.granted"
+                  :disabled="!auth.can(Perm.permissions.update)"
                   color="success"
                   hide-details
                   density="compact"

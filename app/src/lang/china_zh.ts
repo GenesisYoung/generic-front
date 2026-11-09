@@ -79,6 +79,8 @@ const mapping: Record<string, string> = {
   permissionName: '权限名称',
   permissionDescription: '权限描述',
   noPermissionFound: '暂无权限',
+  noPermission: '无权访问',
+  noPermissionContent: '您没有执行此操作的权限，请联系管理员。',
   roleList: '角色列表',
   permissionList: '权限列表',
   userList: '用户列表',

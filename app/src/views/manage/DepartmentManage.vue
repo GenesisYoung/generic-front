@@ -12,6 +12,8 @@
  * backend rejects the delete (HTTP 423) and the reason is surfaced in a dialog.
  * Role toggles are optimistic and roll back on backend failure.
  */
+import { Perm } from '@/assets/config/auth'
+import { useAuthStore } from '@/stores/auth'
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
@@ -21,6 +23,7 @@ import { inject, onMounted, ref } from 'vue'
 // Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
 const lan: Lan | undefined = inject('lan')
+const auth = useAuthStore()
 
 const PAGE_SIZE = 20
 
@@ -167,6 +170,7 @@ onMounted(async () => {
         <div class="rail-head">
           <span class="rail-label">{{ lan?.departmentList }}</span>
           <v-btn
+            v-if="auth.can(Perm.departments.create)"
             icon="mdi-plus"
             size="small"
             variant="tonal"
@@ -185,6 +189,7 @@ onMounted(async () => {
           >
             <template #append>
               <v-btn
+                v-if="auth.can(Perm.departments.delete)"
                 icon="mdi-minus"
                 size="x-small"
                 variant="text"
@@ -227,6 +232,7 @@ onMounted(async () => {
                 </span>
                 <v-switch
                   :model-value="role.granted"
+                  :disabled="!auth.can(Perm.departments.update)"
                   color="success"
                   hide-details
                   density="compact"
