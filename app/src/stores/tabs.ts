@@ -25,10 +25,10 @@ export const useTabsStore = defineStore('tabs', {
      */
     removeTab(tabId: string) {
       if (this.tabs.length === 1) return
-      this.tabs = this.tabs.filter((t) => t.id !== tabId)
       if (this.activeTab === tabId) {
-        this.activeTab = this.tabs.length > 0 ? this.tabs[0]!.id : ''
+        return
       }
+      this.tabs = this.tabs.filter((t) => t.id !== tabId)
       if (this.tabs.length === 0) {
         router.push('/')
       }
