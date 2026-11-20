@@ -155,6 +155,9 @@ const mapping: Record<string, string> = {
   deleteDepartment: 'Delete department',
   deleteDepartmentContent: 'Are you sure you want to delete this department?',
   selectDepartmentPrompt: 'Select a department from the left to manage its roles.',
+  notifications: 'Notifications',
+  noNotifications: 'No notifications yet',
+  markAllRead: 'Mark all as read',
 }
 type Lan = typeof mapping
 export { mapping as lan }

@@ -6,6 +6,7 @@
  */
 import AppNavigation from '@/assets/components/AppNavigation.vue'
 import TabMenu from '@/assets/components/TabMenu.vue'
+import NotificationBell from '@/assets/components/notification/NotificationBell.vue'
 import { useAuthStore } from '@/stores/auth'
 import { inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useDisplay } from 'vuetify'
@@ -31,6 +32,7 @@ onBeforeUnmount(() => window.removeEventListener('focus', refreshPermissions))
         <v-app-bar-nav-icon @click="drawer = !drawer" />
       </template>
       <template v-slot:append>
+        <NotificationBell />
         <v-menu location="bottom end">
           <template v-slot:activator="{ props: menuProps }">
             <v-btn icon v-bind="menuProps" class="user-avatar-btn">

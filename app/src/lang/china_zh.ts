@@ -162,6 +162,9 @@ const mapping: Record<string, string> = {
   birthday: '生日',
   hireDate: '入职日期',
   departments: '就职部门',
+  notifications: '通知',
+  noNotifications: '暂无通知',
+  markAllRead: '全部标为已读',
 }
 type Lan = typeof mapping
 export { mapping as lan }
