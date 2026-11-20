@@ -1,6 +1,6 @@
 import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
-import { lan } from '@/lang/china_zh'
+import { currentLocale, lan } from '@/lang'
 import { globalUtil } from '@/utils/util'
 
 declare module 'axios' {
@@ -29,6 +29,8 @@ const REFRESH_URL = '/auth/refresh/access'
 // ── Request interceptor ───────────────────────────────────────────────────────
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const store = getAuthStore()
+  // The backend answers in this language, so its messages match the page.
+  config.headers['Accept-Language'] = currentLocale
   if ('/auth/refresh/access' === config.url) {
     // debugger
     config.headers['X-Refresh-Request'] = 1

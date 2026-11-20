@@ -7,10 +7,28 @@
 import type { NotificationDto } from '@/api/notification'
 import { useNotificationStore } from '@/stores/notification'
 import { inject } from 'vue'
+import { useRouter } from 'vue-router'
 
 type Lan = Record<string, string>
 const lang: Lan | undefined = inject('lan')
 const store = useNotificationStore()
+const router = useRouter()
+
+/** The page a notification type opens when clicked; types without one only mark it read. */
+const PAGES: Partial<Record<NotificationDto['type'], string>> = {
+  CUSTOMER_ORDER_NEW: '/pmc/customer-orders',
+  PO_PLACEMENT_DUE: '/purchase/placements',
+  EXCEPTION_REPORTED: '/purchase/exceptions',
+  EXCEPTION_UPDATED: '/purchase/exceptions',
+  FOLLOWUP_DUE: '/purchase/followups',
+  FOLLOWUP_MISSED: '/purchase/followups',
+}
+
+function open(n: NotificationDto) {
+  void store.markRead(n.id)
+  const page = PAGES[n.type]
+  if (page && router) void router.push(page)
+}
 
 const ICONS: Record<NotificationDto['type'], string> = {
   REVIEW_ASSIGNED: 'mdi-clipboard-check-outline',
@@ -19,6 +37,7 @@ const ICONS: Record<NotificationDto['type'], string> = {
   FOLLOWUP_MISSED: 'mdi-alarm-off',
   EXCEPTION_REPORTED: 'mdi-alert-octagon-outline',
   EXCEPTION_UPDATED: 'mdi-alert-circle-check-outline',
+  CUSTOMER_ORDER_NEW: 'mdi-cart-arrow-down',
   GENERAL: 'mdi-bell-outline',
 }
 
@@ -71,7 +90,7 @@ function formatTime(iso: string): string {
           v-for="n in store.items"
           :key="n.id"
           :class="{ 'notification-unread': !n.read }"
-          @click="store.markRead(n.id)"
+          @click="open(n)"
         >
           <template v-slot:prepend>
             <v-icon :icon="ICONS[n.type] ?? 'mdi-bell-outline'" :color="iconColor(n)" />

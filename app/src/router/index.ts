@@ -6,7 +6,7 @@
  * on the route and every parent), redirects logged-in users away from /login,
  * and opens every visited route as a tab in the multi-tab workspace.
  */
-import { lan } from '@/lang/china_zh'
+import { lan } from '@/lang'
 import { useAuthStore } from '@/stores/auth'
 import { useTabsStore } from '@/stores/tabs'
 import type { Tab } from '@/types/interface'
