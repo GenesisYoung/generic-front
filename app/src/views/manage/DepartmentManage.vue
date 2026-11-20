@@ -12,11 +12,11 @@
  * backend rejects the delete (HTTP 423) and the reason is surfaced in a dialog.
  * Role toggles are optimistic and roll back on backend failure.
  */
-import { Perm } from '@/assets/config/auth'
-import { useAuthStore } from '@/stores/auth'
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
+import { Perm } from '@/assets/config/auth'
+import { useAuthStore } from '@/stores/auth'
 import { globalUtil } from '@/utils/util'
 import { inject, onMounted, ref } from 'vue'
 
@@ -37,6 +37,7 @@ interface DepartmentItem {
 interface RoleItem {
   id: number
   roleName: string
+  val: number | null
   granted: boolean
 }
 
@@ -184,7 +185,7 @@ onMounted(async () => {
             :key="dept.id"
             :active="currentDept?.id === dept.id"
             :title="dept.deptName"
-            :subtitle="`#${dept.id}`"
+            :subtitle="`#${dept.val}`"
             @click="selectDepartment(dept)"
           >
             <template #append>
@@ -217,7 +218,7 @@ onMounted(async () => {
           <div class="roster-head">
             <div class="roster-title-row">
               <h2>{{ currentDept.deptName }}</h2>
-              <v-chip size="small" variant="tonal">#{{ currentDept.id }}</v-chip>
+              <v-chip size="small" variant="tonal">#{{ currentDept.val }}</v-chip>
             </div>
             <p class="roster-desc">{{ lan?.associatedRoles }}</p>
           </div>
@@ -225,7 +226,7 @@ onMounted(async () => {
           <v-list v-if="!roleLoading && rolesRoster.length > 0" density="compact">
             <v-list-item v-for="role in rolesRoster" :key="role.id">
               <v-list-item-title>{{ role.roleName }}</v-list-item-title>
-              <v-list-item-subtitle>#{{ role.id }}</v-list-item-subtitle>
+              <v-list-item-subtitle>#{{ role.val }}</v-list-item-subtitle>
               <template #append>
                 <span class="status-pill mr-2" :class="role.granted ? 'success' : 'neutral'">
                   {{ role.granted ? lan?.processed : lan?.notGranted }}

@@ -70,7 +70,7 @@ const manage: Route[] = [
       },
       {
         path: 'defaults',
-        name: 'defaultPermissionAlloc',
+        name: 'roleList',
         component: () => import('@/views/manage/view/DefaultPermissionAlloc.vue'),
         meta: {
           requireAuth: true,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import ManagerView from './home/ManagerView.vue'
+import DashboardView from '@/views/home/Dashboard.vue'
 </script>
 
 <template>
-  <ManagerView />
+  <DashboardView />
 </template>

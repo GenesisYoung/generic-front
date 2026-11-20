@@ -65,7 +65,13 @@ export const useNotificationStore = defineStore('notification', () => {
 
     websocket.connect(auth.accessToken)
 
-    websocket.subscribe<NotificationDto>(NOTIFICATION_DESTINATION, receive)
+    websocket.subscribe<NotificationDto>('/user/queue/notification', (dto) => {
+      items.value.unshift(dto)
+    })
+
+    // websocket.subscribe<NotificationDto>('/topic/stock-alert', (dto) => {
+    //   items.value.unshift(dto)
+    // })
 
     websocket.subscribe<SystemStatusDto>('/user/system/status', (dto) => {
       if (dto.code === 1) {

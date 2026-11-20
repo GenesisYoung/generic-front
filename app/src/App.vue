@@ -30,3 +30,8 @@ watch(
     :mode="store.globalDialogMode ?? undefined"
   />
 </template>
+<style>
+.v-main {
+  background-color: #080616;
+}
+</style>

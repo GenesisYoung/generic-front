@@ -12,11 +12,12 @@
  * Toggles are optimistic: the switch flips immediately and is rolled back
  * with an error dialog if the backend rejects the change.
  */
+import http from '@/api/http'
+import PaginationBar from '@/assets/components/PaginationBar.vue'
 import { Perm } from '@/assets/config/auth'
 import { useAuthStore } from '@/stores/auth'
-import http from '@/api/http'
 import { globalUtil } from '@/utils/util'
-import { computed, inject, onMounted, ref } from 'vue'
+import { computed, inject, onActivated, onMounted, ref } from 'vue'
 
 // Active i18n string map, provided by the app root.
 type Lan = Record<string, string>
@@ -28,7 +29,7 @@ interface MenuItem {
   parentId: number | null
   titleKey: string
   icon: string
-  route: string
+  route: string | null
   color: string
 }
 
@@ -54,6 +55,9 @@ interface PermissionRegistrationItem {
 const menus = ref<MenuItem[]>([])
 const menuSearch = ref('')
 const currentMenu = ref<MenuItem | null>(null)
+// Server-side pagination for the menu rail (1-based in the UI, 0-based on the wire).
+const menuPage = ref(1)
+const menuPageCount = ref(0)
 
 // ── User picker (approve mode only) ──────────────────────────────────────────
 const users = ref<UserOption[]>([])
@@ -77,7 +81,7 @@ const filteredMenus = computed(() => {
   const q = menuSearch.value.trim().toLowerCase()
   if (!q) return menus.value
   return menus.value.filter(
-    (m) => m.titleKey.toLowerCase().includes(q) || m.route.toLowerCase().includes(q),
+    (m) => m.titleKey.toLowerCase().includes(q) || (m.route ?? '').toLowerCase().includes(q),
   )
 })
 
@@ -105,9 +109,11 @@ const filteredRegistrations = computed(() => {
 const grantedCount = computed(() => roster.value.filter((p) => p.granted).length)
 const registeredCount = computed(() => registrations.value.filter((p) => p.registered).length)
 
-async function fetchMenus() {
-  const resp = await http.get('manager/menu/fetch/valid?page=0&size=200')
+async function fetchMenus(page: number) {
+  menuPage.value = page
+  const resp = await http.get(`manager/menu/fetch/valid?page=${page - 1}&size=10`)
   menus.value = resp.data.content ?? []
+  menuPageCount.value = resp.data.totalPages ?? 0
 }
 
 async function fetchUsers() {
@@ -141,7 +147,6 @@ async function fetchRegistrations() {
   registrationsLoading.value = true
   try {
     const resp = await http.get(`permission/menu/registration?navId=${currentMenu.value.id}`)
-    console.log('fetchRegistrations', resp.data)
     registrations.value = resp.data ?? []
   } finally {
     registrationsLoading.value = false
@@ -210,8 +215,18 @@ async function toggleRegistration(perm: PermissionRegistrationItem) {
   }
 }
 
+// Cached tabs must reload after the permission catalogue changes on another tab.
+onActivated(async () => {
+  try {
+    await refreshRoster()
+  } catch {
+    roster.value = []
+    registrations.value = []
+  }
+})
+
 onMounted(async () => {
-  await Promise.all([fetchMenus(), fetchUsers()])
+  await Promise.all([fetchMenus(1), fetchUsers()])
 })
 </script>
 
@@ -236,10 +251,16 @@ onMounted(async () => {
             :key="menu.id"
             :active="currentMenu?.id === menu.id"
             :title="menu.titleKey"
-            :subtitle="menu.route"
+            :subtitle="menu.route?.trim() || '目录菜单（无链接）'"
             @click="selectMenu(menu)"
           />
         </v-list>
+        <pagination-bar
+          v-if="menus.length > 0"
+          :current-page="menuPage"
+          :total-pages="menuPageCount"
+          @update:current-page="fetchMenus"
+        />
       </div>
 
       <div class="roster surface-card pa-0">
@@ -250,7 +271,9 @@ onMounted(async () => {
           <div class="roster-head">
             <div class="roster-title-row">
               <h2>{{ currentMenu.titleKey }}</h2>
-              <v-chip size="small" variant="tonal">{{ currentMenu.route }}</v-chip>
+              <v-chip size="small" variant="tonal">{{
+                currentMenu.route?.trim() || '目录菜单（无链接）'
+              }}</v-chip>
               <v-spacer />
               <v-btn
                 size="small"
@@ -284,6 +307,9 @@ onMounted(async () => {
               </template>
             </v-autocomplete>
 
+            <p v-if="!currentMenu.route?.trim()" class="roster-desc">
+              此项控制目录菜单的显示。父目录与子页面需分别授权，目录授权不会授予子页面的业务操作权限。
+            </p>
             <p class="roster-desc">
               {{
                 viewMode === 'approve'

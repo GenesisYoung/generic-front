@@ -10,9 +10,15 @@ const auth = useAuthStore()
 <template>
   <div id="permissionAllocation">
     <v-tabs show-arrows>
-      <v-tab v-if="auth.can(Perm.permissions.read)" to="/user/permission/allocation/user">{{ lan?.throughUser }}</v-tab>
-      <v-tab v-if="auth.can(Perm.permissions.read)" to="/user/permission/allocation/permission">{{ lan?.throughPermission }}</v-tab>
-      <v-tab v-if="auth.can(Perm.roles.read)" to="/user/permission/allocation/defaults">{{ lan?.defaultPermissionAlloc }}</v-tab>
+      <v-tab v-if="auth.can(Perm.permissions.read)" to="/user/permission/allocation/user">{{
+        lan?.throughUser
+      }}</v-tab>
+      <v-tab v-if="auth.can(Perm.permissions.read)" to="/user/permission/allocation/permission">{{
+        lan?.throughPermission
+      }}</v-tab>
+      <v-tab v-if="auth.can(Perm.roles.read)" to="/user/permission/allocation/defaults">{{
+        lan?.roleList
+      }}</v-tab>
     </v-tabs>
     <router-view></router-view>
   </div>

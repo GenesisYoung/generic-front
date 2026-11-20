@@ -12,6 +12,7 @@
 
     <v-alert
       v-if="errorMessage"
+      class="error-alert"
       type="error"
       variant="tonal"
       closable
@@ -126,11 +127,12 @@
             <v-text-field :label="lang?.userEmail" v-model="formUser.email" type="email" />
             <v-text-field
               v-if="!editingUser"
-              label="Initial password"
+              label="初始密码"
               v-model="formUser.initialPassword"
               type="password"
               autocomplete="new-password"
-              hint="At least 12 characters"
+              min-width="6"
+              hint="至少6位字符，建议使用大小写字母、数字和符号组合"
             />
             <!-- <input type="text" hidden :value="syncRoles(formUser.roles)" /> -->
             <v-select
@@ -204,6 +206,7 @@ import { useAuthStore } from '@/stores/auth'
 import utilStore from '@/stores/utils'
 import type { SelectItem } from '@/types/interface'
 import { globalUtil } from '@/utils/util'
+import { isAxiosError } from 'axios'
 import { computed, inject, onMounted, ref } from 'vue'
 
 // Active i18n string map, provided by the app root.
@@ -293,7 +296,7 @@ const fetchUsers = async () => {
 const fetchOptions = async () => {
   const [deptResp, roleResp] = await Promise.all([
     http.get('/admin/departments/dept/options'),
-    http.get('/admin/roles/fetch?page=0&size=200'),
+    http.get('/admin/roles/fetch?page=0&size=20'),
   ])
   deptOptions.value = deptResp.data.object
   const roleList: Array<{ roleName: string; val: number }> = roleResp.data.content ?? []
@@ -371,11 +374,11 @@ const saveUser = async () => {
     initialPassword: editingUser.value ? undefined : formUser.value.initialPassword,
   }
   if (!payload.name || !payload.email) {
-    errorMessage.value = 'Name and email are required'
+    errorMessage.value = '姓名和邮箱不能为空'
     return
   }
-  if (!editingUser.value && (!payload.initialPassword || payload.initialPassword.length < 12)) {
-    errorMessage.value = 'Initial password must be at least 12 characters'
+  if (!editingUser.value && !payload.initialPassword) {
+    errorMessage.value = '初始密码是必需的'
     return
   }
   try {
@@ -383,10 +386,6 @@ const saveUser = async () => {
     const response = editingUser.value
       ? await http.put(url, payload)
       : await http.post(url, payload)
-
-    if (!response.data) {
-      throw new Error('Save failed')
-    }
     // Refusals (e.g. assigning a role you may not grant) come back as HTTP 200
     // with a non-200 code in the body.
     if (response.data.code !== undefined && response.data.code !== 200) {
@@ -396,7 +395,12 @@ const saveUser = async () => {
     await fetchUsers()
     closeForm()
   } catch (error) {
-    globalUtil.activeDialog(lang?.saveFail, error, undefined, 1)
+    // console.error('Save failed:', error)
+    // Non-2xx responses (e.g. 400 validation errors) carry the reason in the body.
+    const message = isAxiosError(error)
+      ? (error.response?.data?.message ?? error.message)
+      : String(error)
+    globalUtil.activeDialog(lang?.saveFail, message, undefined, 1)
   }
 }
 /**
@@ -433,3 +437,14 @@ onMounted(async () => {
   await fetchOptions()
 })
 </script>
+
+<style scoped>
+.error-alert {
+  z-index: 1000000;
+  opacity: 1;
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+</style>
