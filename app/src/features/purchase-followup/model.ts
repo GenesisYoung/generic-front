@@ -1,3 +1,5 @@
+import { fmt, lan } from '@/lang'
+
 /**
  * Types and pure helpers for purchase order follow-up (mirrors the backend's
  * FollowUpTodoItem, FollowUpRecordRequest and FollowUpRecordView).
@@ -60,17 +62,18 @@ export interface SavedFollowUp {
 
 export const NOTE_MAX = 500
 
+/** Labels come from the lang files, so they follow the UI language. */
 export const stageLabels: Record<FollowUpStage, string> = {
-  INITIAL: '第1-2周（每周2次）',
-  INTENSIFIED: '第3周（每2天）',
-  DAILY: '第4周（每天）',
-  OVERDUE: '超期（每天）',
+  INITIAL: lan.followUpStageInitial ?? 'INITIAL',
+  INTENSIFIED: lan.followUpStageIntensified ?? 'INTENSIFIED',
+  DAILY: lan.followUpStageDaily ?? 'DAILY',
+  OVERDUE: lan.followUpStageOverdue ?? 'OVERDUE',
 }
 
 export const materialStatusLabels: Record<MaterialStatus, string> = {
-  ON_TRACK: '正常',
-  AT_RISK: '有风险',
-  DELAYED: '已延误',
+  ON_TRACK: lan.materialOnTrack ?? 'ON_TRACK',
+  AT_RISK: lan.materialAtRisk ?? 'AT_RISK',
+  DELAYED: lan.materialDelayed ?? 'DELAYED',
 }
 
 export const emptyForm = (): FollowUpForm => ({
@@ -80,9 +83,9 @@ export const emptyForm = (): FollowUpForm => ({
   note: '',
 })
 
-/** "今天截止" for 0, otherwise "剩 N 天". */
+/** "Due today" for 0, otherwise "N days left" (in the UI language). */
 export function daysLeftLabel(daysLeft: number): string {
-  return daysLeft <= 0 ? '今天截止' : `剩 ${daysLeft} 天`
+  return daysLeft <= 0 ? (lan.followUpDueToday ?? '') : fmt(lan.followUpDaysLeft, daysLeft)
 }
 
 /** Chip colour: red when due today or in the overdue stage, orange for tomorrow, grey otherwise. */
@@ -94,10 +97,10 @@ export function urgencyColor(item: Pick<TodoItem, 'daysLeft' | 'stage'>): string
 
 /** The first problem with the form, or '' when it can be saved. */
 export function validateForm(form: FollowUpForm): string {
-  if (!form.materialStatus) return '请选择物料状态'
-  if (form.note.length > NOTE_MAX) return `备注最多 ${NOTE_MAX} 个字符`
+  if (!form.materialStatus) return lan.followUpChooseStatus ?? ''
+  if (form.note.length > NOTE_MAX) return fmt(lan.followUpNoteTooLong, NOTE_MAX)
   if (form.supplierPromisedDate && !/^\d{4}-\d{2}-\d{2}$/.test(form.supplierPromisedDate))
-    return '供应商承诺交期格式应为 YYYY-MM-DD'
+    return lan.followUpDateFormat ?? ''
   return ''
 }
 
