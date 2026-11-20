@@ -23,6 +23,17 @@ const virtualization: Route[] = [
       permission: ['menu.order-audit-task.read'],
     },
   },
+  {
+    path: '/purchase/followups',
+    name: 'followUpTodo',
+    component: () => import('@/views/virtulization/purchase/FollowUpTodo.vue'),
+    meta: {
+      title: 'followUpTodo',
+      icon: 'mdi-phone-check-outline',
+      requireAuth: true,
+      permission: ['menu.purchaseOrder.read'],
+    },
+  },
 ]
 
 export default virtualization
