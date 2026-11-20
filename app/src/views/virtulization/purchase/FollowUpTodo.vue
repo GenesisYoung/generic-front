@@ -10,6 +10,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { fmt, lan } from '@/lang'
 import { followUpApi, type OrderFollowUps } from '@/features/purchase-followup/api'
+import { useAuthStore } from '@/stores/auth'
+import ExceptionReportDialog from '@/features/purchase-exception/ExceptionReportDialog.vue'
+import type { PurchaseException } from '@/features/purchase-exception/model'
 import {
   NOTE_MAX,
   daysLeftLabel,
@@ -24,6 +27,15 @@ import {
 } from '@/features/purchase-followup/model'
 
 const rows = ref<TodoItem[]>([])
+const auth = useAuthStore()
+const canReport = computed(() => auth.can('menu.purchaseException.create'))
+const reportFor = ref<TodoItem | null>(null)
+const showReport = computed({
+  get: () => reportFor.value !== null,
+  set: (v: boolean) => {
+    if (!v) reportFor.value = null
+  },
+})
 const loading = ref(false)
 const error = ref('')
 const notice = ref('')
@@ -44,6 +56,10 @@ const dueToday = computed(() => rows.value.filter((r) => r.daysLeft <= 0).length
 
 function message(e: unknown): string {
   return e instanceof Error && e.message ? e.message : (lan.requestFailed ?? '')
+}
+
+function onReported(saved: PurchaseException) {
+  notice.value = fmt(lan.exceptionReported, saved.exceptionNo)
 }
 
 async function load() {
@@ -154,6 +170,16 @@ onMounted(load)
                 @click="openDialog(item)"
                 >{{ lan.followUpRecord }}</v-btn
               >
+              <v-btn
+                v-if="canReport"
+                size="small"
+                color="error"
+                variant="text"
+                class="ml-1"
+                data-test="report-exception"
+                @click="reportFor = item"
+                >{{ lan.exceptionReport }}</v-btn
+              >
             </td>
           </tr>
           <tr v-if="loaded && !loading && !error && rows.length === 0">
@@ -231,6 +257,13 @@ onMounted(load)
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <ExceptionReportDialog
+      v-model="showReport"
+      :purchase-order-id="reportFor?.purchaseOrderId ?? null"
+      :po-no="reportFor?.poNo ?? ''"
+      @reported="onReported"
+    />
 
     <v-snackbar :model-value="!!notice" timeout="3000" @update:model-value="notice = ''">
       {{ notice }}

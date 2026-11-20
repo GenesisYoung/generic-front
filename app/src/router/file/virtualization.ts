@@ -46,6 +46,17 @@ const virtualization: Route[] = [
     },
   },
   {
+    path: '/purchase/exceptions',
+    name: 'purchaseExceptions',
+    component: () => import('@/views/virtulization/purchase/PurchaseExceptions.vue'),
+    meta: {
+      title: 'purchaseExceptions',
+      icon: 'mdi-alert-octagon-outline',
+      requireAuth: true,
+      permission: ['menu.purchaseException.read'],
+    },
+  },
+  {
     path: '/purchase/placements',
     name: 'placementTasks',
     component: () => import('@/views/virtulization/purchase/PlacementTasks.vue'),

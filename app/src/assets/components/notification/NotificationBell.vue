@@ -18,6 +18,8 @@ const router = useRouter()
 const PAGES: Partial<Record<NotificationDto['type'], string>> = {
   CUSTOMER_ORDER_NEW: '/pmc/customer-orders',
   PO_PLACEMENT_DUE: '/purchase/placements',
+  EXCEPTION_REPORTED: '/purchase/exceptions',
+  EXCEPTION_UPDATED: '/purchase/exceptions',
   FOLLOWUP_DUE: '/purchase/followups',
   FOLLOWUP_MISSED: '/purchase/followups',
 }
