@@ -24,6 +24,17 @@ const virtualization: Route[] = [
     },
   },
   {
+    path: '/pmc/customer-orders',
+    name: 'customerOrderReview',
+    component: () => import('@/views/virtulization/pmc/CustomerOrderReview.vue'),
+    meta: {
+      title: 'customerOrderReview',
+      icon: 'mdi-cart-arrow-down',
+      requireAuth: true,
+      permission: ['menu.customerOrder.read'],
+    },
+  },
+  {
     path: '/purchase/followups',
     name: 'followUpTodo',
     component: () => import('@/views/virtulization/purchase/FollowUpTodo.vue'),
