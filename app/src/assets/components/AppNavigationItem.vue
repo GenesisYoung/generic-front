@@ -22,7 +22,13 @@
     />
   </v-list-group>
 
-  <v-list-item v-else :to="item.route" rounded="lg" class="mb-1" @click="$emit('navigate')">
+  <v-list-item
+    v-else
+    :to="item.route?.trim() || undefined"
+    rounded="lg"
+    class="mb-1"
+    @click="item.route?.trim() && $emit('navigate')"
+  >
     <template #prepend>
       <v-icon :color="item.color" :icon="formatIcon(item.icon)" />
     </template>

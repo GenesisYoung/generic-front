@@ -13,11 +13,11 @@
  * Permission toggles are optimistic: the switch flips immediately and is
  * rolled back with an error dialog if the backend rejects the change.
  */
-import { Perm } from '@/assets/config/auth'
-import { useAuthStore } from '@/stores/auth'
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
+import { Perm } from '@/assets/config/auth'
+import { useAuthStore } from '@/stores/auth'
 import { globalUtil } from '@/utils/util'
 import { inject, onMounted, ref } from 'vue'
 
@@ -173,7 +173,7 @@ onMounted(async () => {
             :key="role.id"
             :active="currentRole?.id === role.id"
             :title="role.roleName"
-            :subtitle="`#${role.id}`"
+            :subtitle="`#${role.val}`"
             @click="selectRole(role)"
           >
             <template #append>
@@ -206,7 +206,7 @@ onMounted(async () => {
           <div class="roster-head">
             <div class="roster-title-row">
               <h2>{{ currentRole.roleName }}</h2>
-              <v-chip size="small" variant="tonal">#{{ currentRole.id }}</v-chip>
+              <v-chip size="small" variant="tonal">#{{ currentRole.val }}</v-chip>
             </div>
             <p class="roster-desc">{{ lan?.associatedPermissions }}</p>
           </div>
@@ -223,7 +223,8 @@ onMounted(async () => {
                 <v-switch
                   :model-value="perm.granted"
                   :disabled="
-                    !auth.can(Perm.roles.update) || (!perm.granted && !auth.can(perm.permissionCode))
+                    !auth.can(Perm.roles.update) ||
+                    (!perm.granted && !auth.can(perm.permissionCode))
                   "
                   color="success"
                   hide-details

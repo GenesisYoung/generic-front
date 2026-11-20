@@ -1,211 +1,215 @@
 <script setup lang="ts">
-/**
- * Permission list management (child tab of /permission/management).
- *
- * Permission codes use a dotted "root.child" convention (e.g. "user.read").
- * The flat page returned by the backend is regrouped client-side into a
- * two-level tree: `permissionRoot` holds the distinct root segments and
- * `permission` maps each root to its child entries, rendered as
- * checkbox-selectable v-list-groups.
- */
+import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Perm } from '@/assets/config/auth'
 import { useAuthStore } from '@/stores/auth'
 import http from '@/api/http'
 import PaginationBar from '@/assets/components/PaginationBar.vue'
 import TheForm from '@/assets/components/utils/TheForm.vue'
-import { globalUtil } from '@/utils/util'
-import { inject, onMounted, ref } from 'vue'
-
-// Active i18n string map, provided by the app root.
-type Lan = Record<string, string>
-const lan: Lan | undefined = inject('lan')
+import PermissionTreeItem from '../components/PermissionTreeItem.vue'
+import {
+  buildPermissionTree,
+  toggleRecords,
+  type PermissionRecord,
+} from '@/features/permissions/tree'
+const lan = inject<Record<string, string>>('lan')
 const auth = useAuthStore()
-const currentPage = ref(1)
-const pageSize = ref(10)
-const pageCount = ref(0)
-const permissionsRespsonse = ref<
-  Array<{ id: number; permissionCode: string; val: number; show: string }>
->([])
-const showForm = ref(false)
-const selections = ref([])
-const permissionRoot = ref(new Set<string>())
-const permission = ref(
-  new Map<string, { id: number; permissionCode: string; val: number; show: string }[]>(),
-)
-const formData = ref<{
-  id: number | null
-  permissionCode: string
-  val: number | null
-}>({
+const currentPage = ref(1),
+  pageSize = ref(10),
+  pageCount = ref(0)
+const records = ref<PermissionRecord[]>([]),
+  selections = ref<number[]>([])
+const tree = computed(() => buildPermissionTree(records.value))
+const loading = ref(false),
+  saving = ref(false),
+  error = ref(''),
+  formError = ref(''),
+  name = ref(''),
+  appliedName = ref(''),
+  showForm = ref(false)
+const formData = ref<{ id: number | null; permissionCode: string; val: number | null }>({
   id: null,
   permissionCode: '',
   val: null,
 })
-/**
- * Loads one page of permissions and rebuilds the root → children grouping
- * by splitting each permissionCode on the first '.'.
- */
-const fetchPermissions = async (page: number) => {
-  currentPage.value = page
-  permissionRoot.value = new Set<string>()
-  permission.value = new Map<
-    string,
-    { id: number; permissionCode: string; val: number; show: string }[]
-  >()
-  const resp = await http.get(
-    `/admin/permissions/fetch?page=${currentPage.value - 1}&size=${pageSize.value}`,
-  )
-  if (resp.data.content) {
-    permissionsRespsonse.value = resp.data.content
-    permissionsRespsonse.value.forEach((ele) => {
-      const val = ele.permissionCode
-      const v = val.split('.')
-      if (v[0] != undefined) {
-        permissionRoot.value.add(v[0])
-        if (!permission.value.get(v[0])) {
-          permission.value.set(
-            v[0],
-            new Array<{
-              id: number
-              permissionCode: string
-              val: number
-              show: string
-            }>(),
-          )
-        }
-        if (v[1] != undefined && permission.value.get(v[0]) != undefined) {
-          const list = permission.value.get(v[0])
-          list?.push({ id: ele.id, val: ele.val, permissionCode: ele.permissionCode, show: v[1] })
-          if (list != undefined) permission.value.set(v[0], list)
-        }
-      }
-    })
-    pageCount.value = resp.data.totalPages
+let generation = 0
+function message(e: unknown) {
+  return e instanceof Error ? e.message : '操作失败，请重试。'
+}
+async function fetchPermissions(page: number) {
+  const token = ++generation
+  loading.value = true
+  error.value = ''
+  records.value = []
+  selections.value = []
+  try {
+    const resp = await http.get<{ content: PermissionRecord[]; totalPages: number }>(
+      '/admin/permissions/fetch',
+      { params: { page: page - 1, size: pageSize.value, name: appliedName.value || undefined } },
+    )
+    if (token !== generation) return
+    pageCount.value = resp.data.totalPages || 0
+    if (page > Math.max(1, pageCount.value)) {
+      await fetchPermissions(Math.max(1, pageCount.value))
+      return
+    }
+    currentPage.value = page
+    records.value = resp.data.content || []
+  } catch (e) {
+    if (token === generation) error.value = message(e)
+  } finally {
+    if (token === generation) loading.value = false
   }
 }
-async function addRecord() {
-  showForm.value = true
+async function search() {
+  appliedName.value = name.value.trim()
+  await fetchPermissions(1)
+}
+function toggle(ids: number[], selected: boolean) {
+  selections.value = toggleRecords(selections.value, ids, selected)
+}
+function addRecord() {
   formData.value = { id: null, permissionCode: '', val: null }
+  formError.value = ''
+  showForm.value = true
 }
 async function submitData() {
-  const resp = http.post('/admin/permissions/save', formData.value)
-  if ((await resp).data.code != 200) {
-    globalUtil.activeDialog(lan?.error, (await resp).data.message, undefined)
+  if (saving.value) return
+  const code = formData.value.permissionCode.trim()
+  if (!code || code.split('.').some((p) => !p.trim())) {
+    formError.value = '请填写完整权限码，各层级用英文句点分隔，层级名称不能为空。'
+    return
   }
-  showForm.value = false
-  await fetchPermissions(currentPage.value)
+  saving.value = true
+  formError.value = ''
+  try {
+    const response = await http.post('/admin/permissions/save', {
+      ...formData.value,
+      permissionCode: code,
+    })
+    if (response.data.code !== 200) throw new Error(response.data.message || '保存失败。')
+    showForm.value = false
+    await fetchPermissions(currentPage.value)
+  } catch (e) {
+    formError.value = message(e)
+  } finally {
+    saving.value = false
+  }
 }
-function cancel() {
-  showForm.value = false
-  formData.value = { id: null, permissionCode: '', val: null }
-}
-/**
- * Deletes the selected entries. Selection values are mixed: child rows use
- * numeric ids, root group rows use their string root code — so they are
- * split and sent to two different delete endpoints.
- */
 async function remove() {
-  const numbers = ref([])
-  const strings = ref([])
-  selections.value.forEach((ele) => {
-    if (Number.isInteger(ele)) {
-      numbers.value.push(ele)
-    } else {
-      strings.value.push(ele)
-    }
-  })
-  const resp_1 = await http.post('/admin/permissions/delete', { deleteVal: numbers.value })
-  const resp_2 = await http.post('/admin/permissions/deleteRoot', { deleteVal: strings.value })
-  if (resp_1.data.status != 200) {
-    globalUtil.activeDialog(lan?.error, resp_1.data.message, undefined)
+  if (saving.value || !selections.value.length) return
+  // Only real IDs loaded on this page are sent. Virtual prefixes cannot trigger
+  // the legacy deleteRoot endpoint's unbounded cascading deletion.
+  const valid = new Set(records.value.map((r) => r.id))
+  const ids = selections.value.filter((id) => valid.has(id))
+  if (!ids.length) return
+  saving.value = true
+  error.value = ''
+  try {
+    const response = await http.post('/admin/permissions/delete', { deleteVal: ids })
+    if (response.data.status !== 200) throw new Error(response.data.message || '移除失败。')
+    await fetchPermissions(currentPage.value)
+  } catch (e) {
+    error.value = message(e)
+  } finally {
+    saving.value = false
   }
-  if (resp_2.data.status != 200) {
-    globalUtil.activeDialog(lan?.error, resp_2.data.message, undefined)
-  }
-  showForm.value = false
-  await fetchPermissions(currentPage.value)
 }
-
-onMounted(async () => {
-  await fetchPermissions(currentPage.value)
+onMounted(() => fetchPermissions(1))
+onBeforeUnmount(() => {
+  ++generation
 })
 </script>
-
 <template>
   <div class="page">
     <div class="toolbar">
-      <v-btn v-if="auth.can(Perm.permissions.create)" color="primary" @click="addRecord">{{
-        lan?.addPermission
-      }}</v-btn>
+      <v-btn
+        v-if="auth.can(Perm.permissions.create)"
+        color="primary"
+        :disabled="loading || saving"
+        @click="addRecord"
+        >{{ lan?.addPermission || '添加权限' }}</v-btn
+      >
       <v-btn
         v-if="auth.can(Perm.permissions.delete)"
         color="red"
         variant="tonal"
+        :disabled="loading || saving || !selections.length"
         @click="remove"
-        >{{ lan?.removePermission }}</v-btn
+        >{{ lan?.removePermission || '移除权限'
+        }}{{ selections.length ? `（${selections.length}）` : '' }}</v-btn
       >
       <v-text-field
-        :label="lan?.name"
+        v-model="name"
+        :label="lan?.name || '权限码'"
         append-icon="mdi-magnify"
         hide-details
         density="compact"
         class="auto-grow"
         style="min-width: 220px; max-width: 360px"
+        :disabled="loading || saving"
+        @click:append="search"
+        @keyup.enter="search"
       />
     </div>
-    <div v-if="permissionRoot.size > 0" class="surface-card pa-0">
-      <v-list v-model:selected="selections" select-strategy="classic">
-        <v-list-group v-for="root in permissionRoot" :key="root">
-          <template v-slot:activator="{ props }">
-            <v-list-item v-bind="props" :title="root" :value="root">
-              <template v-slot:prepend="{ isSelected, select }">
-                <v-list-item-action start>
-                  <v-checkbox-btn
-                    :model-value="isSelected"
-                    @update:model-value="select"
-                  ></v-checkbox-btn>
-                </v-list-item-action>
-              </template>
-            </v-list-item>
-          </template>
-          <v-list-item
-            v-for="val in permission.get(root)"
-            :key="val.id"
-            :value="val.id"
-            :title="val.show"
-            :subtitle="val.id"
-          >
-            <template v-slot:prepend="{ isSelected, select }">
-              <v-list-item-action start>
-                <v-checkbox-btn
-                  :model-value="isSelected"
-                  @update:model-value="select"
-                ></v-checkbox-btn>
-              </v-list-item-action>
-            </template>
-          </v-list-item>
-        </v-list-group>
-      </v-list>
+    <p class="text-caption mb-3">
+      按完整权限码逐级展开，支持任意层级。勾选分组仅选择当前页的真实记录；移除按所选编号执行。
+    </p>
+    <v-alert v-if="error" type="error" class="mb-3"
+      >{{ error
+      }}<v-btn variant="text" :disabled="loading || saving" @click="fetchPermissions(currentPage)"
+        >重试</v-btn
+      ></v-alert
+    >
+    <v-progress-linear v-if="loading" indeterminate aria-label="正在加载权限" />
+    <div v-if="tree.length" class="surface-card pa-0 permission-tree">
+      <v-list open-strategy="multiple"
+        ><PermissionTreeItem
+          v-for="node in tree"
+          :key="node.key"
+          :node="node"
+          :selected="selections"
+          :disabled="saving || loading"
+          @toggle="toggle"
+      /></v-list>
     </div>
-    <article v-else class="center py-8">{{ lan?.noAvaiableData }}</article>
-    <the-form v-if="showForm">
-      <template #form>
-        <v-row>
-          <v-col>
-            <v-text-field :label="lan?.name" v-model="formData.permissionCode" />
-            <v-btn :text="lan?.submit" color="green" class="mr-2" @click="submitData" />
-            <v-btn :text="lan?.cancel" color="red" @click="cancel" />
-          </v-col>
-        </v-row>
-      </template>
-    </the-form>
+    <article v-else-if="!loading && !error" class="center py-8">
+      {{ lan?.noAvaiableData || '暂无权限记录' }}
+    </article>
+    <the-form v-if="showForm"
+      ><template #form
+        ><v-row
+          ><v-col>
+            <v-alert v-if="formError" type="error" class="mb-3">{{ formError }}</v-alert>
+            <v-text-field
+              v-model="formData.permissionCode"
+              :label="lan?.name || '完整权限码'"
+              :disabled="saving"
+              placeholder="menu.order-audit-task.rules.configure"
+            />
+            <v-btn
+              :text="lan?.submit || '提交'"
+              color="green"
+              class="mr-2"
+              :loading="saving"
+              @click="submitData"
+            />
+            <v-btn
+              :text="lan?.cancel || '取消'"
+              color="red"
+              :disabled="saving"
+              @click="showForm = false"
+            /> </v-col></v-row></template
+    ></the-form>
     <pagination-bar
-      v-if="permissionRoot.size > 0"
+      v-if="pageCount > 1"
       :current-page="currentPage"
       :total-pages="pageCount"
       @update:current-page="fetchPermissions"
     />
   </div>
 </template>
-
-<style></style>
+<style scoped>
+.permission-tree {
+  overflow-x: auto;
+}
+</style>

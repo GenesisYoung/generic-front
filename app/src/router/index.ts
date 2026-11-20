@@ -13,6 +13,7 @@ import type { Tab } from '@/types/interface'
 import { globalUtil } from '@/utils/util'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import manage from './file/manage'
+import virtualization from './file/virtualization'
 type Lan = Record<string, string>
 const mapping: Lan = lan
 
@@ -41,6 +42,7 @@ const router = createRouter({
       meta: { requireAuth: true },
     },
     ...manage,
+    ...virtualization,
     {
       path: '/:pathMatch(.*)*',
       redirect: '/',
@@ -56,8 +58,12 @@ router.beforeEach(async (to) => {
     return { name: 'login' }
   }
 
-  // Refresh permission codes once per page load before the first check.
-  if (auth.isAuthenticated && !auth.permissionsLoaded) {
+  // Re-check protected destinations so menu grants made in another session apply
+  // without keeping an old permission snapshot until the next login.
+  if (
+    auth.isAuthenticated &&
+    (!auth.permissionsLoaded || to.matched.some((record) => record.meta.permission?.length))
+  ) {
     await auth.loadPermissions()
   }
   const allowed = to.matched.every((record) => {

@@ -1,10 +1,11 @@
 const mapping: Record<string, string> = {
+  evidenceManagement: '凭证管理',
   currency: '¥',
   title: '通用企业资源系统',
   login: '登录',
-  home: '主页',
+  home: '工作台',
   navigation: '导航',
-  mainPage: '主页',
+  mainPage: '工作台',
   userManagement: '用户管理',
   roleManagement: '角色管理',
   permissionManagement: '权限管理',
@@ -162,6 +163,13 @@ const mapping: Record<string, string> = {
   birthday: '生日',
   hireDate: '入职日期',
   departments: '就职部门',
+  pmcBusinessTasks: 'PMC业务任务',
+  orderAuditTask: '订单评审任务',
+  materialRequirement: '物料需求',
+  materialReadiness: '物料齐套',
+  erpOrder: 'ERP订单',
+  tailOrderManage: '尾单管理',
+  orderAuditTaskList: '订单评审列表',
 }
 type Lan = typeof mapping
 export { mapping as lan }
