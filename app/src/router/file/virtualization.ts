@@ -24,6 +24,28 @@ const virtualization: Route[] = [
     },
   },
   {
+    path: '/pmc/dashboard',
+    name: 'pmcDashboard',
+    component: () => import('@/views/virtulization/pmc/PmcDashboard.vue'),
+    meta: {
+      title: 'pmcDashboard',
+      icon: 'mdi-view-dashboard-outline',
+      requireAuth: true,
+      permission: ['menu.pmcDashboard'],
+    },
+  },
+  {
+    path: '/purchase/dashboard',
+    name: 'purchaseDashboard',
+    component: () => import('@/views/virtulization/purchase/PurchaseDashboard.vue'),
+    meta: {
+      title: 'purchaseDashboard',
+      icon: 'mdi-view-dashboard-variant-outline',
+      requireAuth: true,
+      permission: ['menu.purchaseDashboard'],
+    },
+  },
+  {
     path: '/pmc/customer-orders',
     name: 'customerOrderReview',
     component: () => import('@/views/virtulization/pmc/CustomerOrderReview.vue'),
