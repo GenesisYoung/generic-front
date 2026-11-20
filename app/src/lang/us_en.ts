@@ -158,6 +158,7 @@ const mapping: Record<string, string> = {
   notifications: 'Notifications',
   noNotifications: 'No notifications yet',
   markAllRead: 'Mark all as read',
+  followUpTodo: 'Follow-up To-do',
 }
 type Lan = typeof mapping
 export { mapping as lan }

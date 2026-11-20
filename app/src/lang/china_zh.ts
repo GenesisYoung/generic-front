@@ -170,6 +170,10 @@ const mapping: Record<string, string> = {
   erpOrder: 'ERP订单',
   tailOrderManage: '尾单管理',
   orderAuditTaskList: '订单评审列表',
+  followUpTodo: '跟进待办',
+  notifications: '通知',
+  noNotifications: '暂无通知',
+  markAllRead: '全部标为已读',
 }
 type Lan = typeof mapping
 export { mapping as lan }
