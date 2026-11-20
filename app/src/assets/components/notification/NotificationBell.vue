@@ -17,6 +17,7 @@ const router = useRouter()
 /** The page a notification type opens when clicked; types without one only mark it read. */
 const PAGES: Partial<Record<NotificationDto['type'], string>> = {
   CUSTOMER_ORDER_NEW: '/pmc/customer-orders',
+  PO_PLACEMENT_DUE: '/purchase/placements',
   FOLLOWUP_DUE: '/purchase/followups',
   FOLLOWUP_MISSED: '/purchase/followups',
 }

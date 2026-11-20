@@ -45,6 +45,17 @@ const virtualization: Route[] = [
       permission: ['menu.purchaseOrder.read'],
     },
   },
+  {
+    path: '/purchase/placements',
+    name: 'placementTasks',
+    component: () => import('@/views/virtulization/purchase/PlacementTasks.vue'),
+    meta: {
+      title: 'placementTasks',
+      icon: 'mdi-cart-clock',
+      requireAuth: true,
+      permission: ['menu.purchaseOrder.read'],
+    },
+  },
 ]
 
 export default virtualization
