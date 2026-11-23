@@ -43,6 +43,17 @@ export const followUpApi = {
         .data,
     )
   },
+  /** Marks one follow-up task complete, saving the follow-up written for it. */
+  async complete(checkpointId: number, form: FollowUpForm): Promise<SavedFollowUp> {
+    return unwrap(
+      (
+        await http.post<Envelope<SavedFollowUp>>(
+          `/followups/checkpoints/${checkpointId}/complete`,
+          toRequest(form),
+        )
+      ).data,
+    )
+  },
   /** Saves a follow-up; completes the open window that contains today, if any. */
   async record(purchaseOrderId: number, form: FollowUpForm): Promise<SavedFollowUp> {
     return unwrap(

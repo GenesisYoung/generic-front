@@ -33,6 +33,21 @@ describe('follow-up API', () => {
     })
   })
 
+  it('completes one task by its id', async () => {
+    http.post.mockResolvedValue({
+      data: {
+        status: 200,
+        message: 'OK',
+        object: { record: { id: 6 }, completedCheckpoint: { id: 3 } },
+      },
+    })
+    await followUpApi.complete(3, { ...emptyForm(), materialStatus: 'AT_RISK' })
+    expect(http.post).toHaveBeenCalledWith(
+      '/followups/checkpoints/3/complete',
+      expect.objectContaining({ materialStatus: 'AT_RISK', note: null }),
+    )
+  })
+
   it('turns an error status inside the envelope into an error with the backend message', async () => {
     http.post.mockResolvedValue({
       data: {
