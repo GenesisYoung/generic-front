@@ -3,12 +3,16 @@
  * Purchaser's follow-up to-do list (route /purchase/followups).
  *
  * Shows my checkpoints whose window is open now, the ones ending first on top.
- * "记录跟进" opens a dialog that saves a follow-up record; when it completes the
+ * "Record follow-up" opens a dialog that saves a follow-up record; when it completes the
  * window, the row leaves the list. The backend stamps the time itself, so a
  * follow-up always counts for today's window.
  */
 import { computed, onMounted, ref } from 'vue'
+import { fmt, lan } from '@/lang'
 import { followUpApi, type OrderFollowUps } from '@/features/purchase-followup/api'
+import { useAuthStore } from '@/stores/auth'
+import ExceptionReportDialog from '@/features/purchase-exception/ExceptionReportDialog.vue'
+import type { PurchaseException } from '@/features/purchase-exception/model'
 import {
   NOTE_MAX,
   daysLeftLabel,
@@ -23,6 +27,15 @@ import {
 } from '@/features/purchase-followup/model'
 
 const rows = ref<TodoItem[]>([])
+const auth = useAuthStore()
+const canReport = computed(() => auth.can('menu.purchaseException.create'))
+const reportFor = ref<TodoItem | null>(null)
+const showReport = computed({
+  get: () => reportFor.value !== null,
+  set: (v: boolean) => {
+    if (!v) reportFor.value = null
+  },
+})
 const loading = ref(false)
 const error = ref('')
 const notice = ref('')
@@ -42,7 +55,11 @@ const materialOptions = (Object.keys(materialStatusLabels) as MaterialStatus[]).
 const dueToday = computed(() => rows.value.filter((r) => r.daysLeft <= 0).length)
 
 function message(e: unknown): string {
-  return e instanceof Error && e.message ? e.message : '请求失败，请稍后再试'
+  return e instanceof Error && e.message ? e.message : (lan.requestFailed ?? '')
+}
+
+function onReported(saved: PurchaseException) {
+  notice.value = fmt(lan.exceptionReported, saved.exceptionNo)
 }
 
 async function load() {
@@ -51,7 +68,7 @@ async function load() {
   try {
     rows.value = await followUpApi.todo()
   } catch (e) {
-    error.value = `加载跟进待办失败：${message(e)}`
+    error.value = fmt(lan.followUpLoadFailed, message(e))
   } finally {
     loading.value = false
     loaded.value = true
@@ -83,8 +100,8 @@ async function save() {
     if (done != null) rows.value = rows.value.filter((r) => r.checkpointId !== done)
     notice.value =
       done != null
-        ? `${item.poNo} 跟进已记录，本次检查点已完成`
-        : `${item.poNo} 跟进已记录（额外跟进，未对应检查点）`
+        ? fmt(lan.followUpSavedCheckpoint, item.poNo)
+        : fmt(lan.followUpSavedExtra, item.poNo)
     showDialog.value = false
   } catch (e) {
     dialogError.value = message(e)
@@ -100,18 +117,20 @@ onMounted(load)
   <v-container id="follow-up-todo" fluid>
     <div class="d-flex flex-wrap align-center ga-3 mb-4">
       <div class="flex-grow-1">
-        <h1 class="text-h5">跟进待办</h1>
+        <h1 class="text-h5">{{ lan.followUpTodo }}</h1>
         <p class="text-body-2 mt-1">
-          第1-2周每周至少2次 → 第3周每2天（含周末）→ 第4周每天 → 超期每天，直到到货
+          {{ lan.followUpHint }}
         </p>
       </div>
-      <v-btn variant="outlined" :loading="loading" data-test="refresh" @click="load">刷新</v-btn>
+      <v-btn variant="outlined" :loading="loading" data-test="refresh" @click="load">{{
+        lan.refresh
+      }}</v-btn>
     </div>
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
 
     <div v-if="loaded && !error" class="text-body-2 mb-2" data-test="summary">
-      共 {{ rows.length }} 项待跟进，其中 {{ dueToday }} 项今天截止。
+      {{ fmt(lan.followUpSummary, rows.length, dueToday) }}
     </div>
 
     <v-card variant="outlined">
@@ -119,13 +138,13 @@ onMounted(load)
       <v-table density="comfortable">
         <thead>
           <tr>
-            <th>订单号</th>
-            <th>供应商</th>
-            <th>阶段</th>
-            <th>跟进窗口</th>
-            <th>截止</th>
-            <th>下单日期</th>
-            <th>预计交期</th>
+            <th>{{ lan.followUpColPoNo }}</th>
+            <th>{{ lan.followUpColSupplier }}</th>
+            <th>{{ lan.followUpColStage }}</th>
+            <th>{{ lan.followUpColWindow }}</th>
+            <th>{{ lan.followUpColDue }}</th>
+            <th>{{ lan.followUpColOrderDate }}</th>
+            <th>{{ lan.followUpColExpected }}</th>
             <th />
           </tr>
         </thead>
@@ -133,7 +152,7 @@ onMounted(load)
           <tr v-for="item in rows" :key="item.checkpointId" data-test="todo-row">
             <td>{{ item.poNo }}</td>
             <td>{{ item.supplierName || item.supplierCode || '—' }}</td>
-            <td>{{ stageLabels[item.stage] }} · 第{{ item.seq }}次</td>
+            <td>{{ stageLabels[item.stage] }} · {{ fmt(lan.followUpNth, item.seq) }}</td>
             <td>{{ item.windowStart }} ~ {{ item.windowEnd }}</td>
             <td>
               <v-chip size="small" :color="urgencyColor(item)">{{
@@ -149,13 +168,23 @@ onMounted(load)
                 variant="tonal"
                 data-test="record"
                 @click="openDialog(item)"
-                >记录跟进</v-btn
+                >{{ lan.followUpRecord }}</v-btn
+              >
+              <v-btn
+                v-if="canReport"
+                size="small"
+                color="error"
+                variant="text"
+                class="ml-1"
+                data-test="report-exception"
+                @click="reportFor = item"
+                >{{ lan.exceptionReport }}</v-btn
               >
             </td>
           </tr>
           <tr v-if="loaded && !loading && !error && rows.length === 0">
             <td colspan="8" class="text-center text-medium-emphasis py-6" data-test="empty">
-              当前没有需要跟进的订单
+              {{ lan.followUpEmpty }}
             </td>
           </tr>
         </tbody>
@@ -164,32 +193,32 @@ onMounted(load)
 
     <v-dialog v-model="showDialog" max-width="560">
       <v-card v-if="selected">
-        <v-card-title>记录跟进 · {{ selected.poNo }}</v-card-title>
+        <v-card-title>{{ lan.followUpRecord }} · {{ selected.poNo }}</v-card-title>
         <v-card-text>
           <p class="text-body-2 mb-4">
-            {{ selected.supplierName || selected.supplierCode || '' }} · 窗口
+            {{ selected.supplierName || selected.supplierCode || '' }} · {{ lan.followUpWindow }}
             {{ selected.windowStart }} ~ {{ selected.windowEnd }}
           </p>
           <v-select
             v-model="form.materialStatus"
             :items="materialOptions"
-            label="物料状态 *"
+            :label="lan.followUpMaterialStatus"
             data-test="material-status"
           />
           <v-text-field
             v-model="form.supplierPromisedDate"
             type="date"
-            label="供应商承诺交期"
+            :label="lan.followUpPromisedDate"
             data-test="promised-date"
           />
           <v-checkbox
             v-model="form.missingOrderFound"
-            label="发现供应商漏单（未收到或遗失订单）"
+            :label="lan.followUpMissingOrder"
             hide-details
           />
           <v-textarea
             v-model="form.note"
-            label="备注"
+            :label="lan.followUpNote"
             :counter="NOTE_MAX"
             rows="3"
             data-test="note"
@@ -204,7 +233,7 @@ onMounted(load)
             {{ dialogError }}
           </v-alert>
           <div v-if="history && history.records.length" class="mt-4" data-test="history">
-            <div class="text-subtitle-2 mb-1">最近跟进</div>
+            <div class="text-subtitle-2 mb-1">{{ lan.followUpRecent }}</div>
             <div
               v-for="r in history.records.slice(0, 5)"
               :key="r.id"
@@ -212,18 +241,29 @@ onMounted(load)
             >
               {{ r.followedUpAt.replace('T', ' ').slice(0, 16) }} · {{ r.recordedByName || '' }} ·
               {{ materialStatusLabels[r.materialStatus] }}
-              <span v-if="r.supplierPromisedDate"> · 承诺 {{ r.supplierPromisedDate }}</span>
+              <span v-if="r.supplierPromisedDate">
+                · {{ fmt(lan.followUpPromised, r.supplierPromisedDate) }}</span
+              >
               <span v-if="r.note"> · {{ r.note }}</span>
             </div>
           </div>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn :disabled="saving" @click="showDialog = false">取消</v-btn>
-          <v-btn color="primary" :loading="saving" data-test="save" @click="save">保存</v-btn>
+          <v-btn :disabled="saving" @click="showDialog = false">{{ lan.cancel }}</v-btn>
+          <v-btn color="primary" :loading="saving" data-test="save" @click="save">{{
+            lan.save
+          }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <ExceptionReportDialog
+      v-model="showReport"
+      :purchase-order-id="reportFor?.purchaseOrderId ?? null"
+      :po-no="reportFor?.poNo ?? ''"
+      @reported="onReported"
+    />
 
     <v-snackbar :model-value="!!notice" timeout="3000" @update:model-value="notice = ''">
       {{ notice }}

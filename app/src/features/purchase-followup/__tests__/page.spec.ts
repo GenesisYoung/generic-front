@@ -3,6 +3,8 @@ import { defineComponent, type Component } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 const api = vi.hoisted(() => ({ todo: vi.fn(), orderFollowUps: vi.fn(), record: vi.fn() }))
 vi.mock('@/features/purchase-followup/api', () => ({ followUpApi: api }))
+const perms = vi.hoisted(() => new Set<string>())
+vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ can: (c: string) => perms.has(c) }) }))
 import Page from '@/views/virtulization/purchase/FollowUpTodo.vue'
 import type { TodoItem } from '@/features/purchase-followup/model'
 
@@ -73,6 +75,20 @@ describe('FollowUpTodo page', () => {
       expect.stringContaining('PO-B'),
     ])
     expect(page.find('[data-test="summary"]').text()).toContain('共 2 项待跟进，其中 1 项今天截止')
+  })
+
+  it('offers to report an exception on the order when allowed', async () => {
+    api.todo.mockResolvedValue([item(1, 'PO-A', 0)])
+    const page = mount(Page, { global: { stubs } })
+    await flushPromises()
+    expect(page.find('[data-test="report-exception"]').exists()).toBe(false)
+
+    perms.add('menu.purchaseException.create')
+    const allowed = mount(Page, { global: { stubs } })
+    await flushPromises()
+    await allowed.find('[data-test="report-exception"]').trigger('click')
+    expect((allowed.find('[data-test="report-po"]').element as HTMLInputElement).value).toBe('PO-A')
+    perms.clear()
   })
 
   it('shows an empty state', async () => {

@@ -8,6 +8,7 @@ export type NotificationType =
   | 'FOLLOWUP_MISSED'
   | 'EXCEPTION_REPORTED'
   | 'EXCEPTION_UPDATED'
+  | 'CUSTOMER_ORDER_NEW'
   | 'GENERAL'
 
 /** One stored notification, the same shape from REST and from the WebSocket push. */

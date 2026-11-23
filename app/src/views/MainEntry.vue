@@ -7,6 +7,7 @@
 import AppNavigation from '@/assets/components/AppNavigation.vue'
 import TabMenu from '@/assets/components/TabMenu.vue'
 import NotificationBell from '@/assets/components/notification/NotificationBell.vue'
+import { currentLocale, setLocale } from '@/lang'
 import { useAuthStore } from '@/stores/auth'
 import { inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useDisplay } from 'vuetify'
@@ -46,6 +47,13 @@ onBeforeUnmount(() => window.removeEventListener('focus', refreshPermissions))
             <v-list-item :title="auth.identity?.displayName ?? auth.identity?.name" disabled />
             <v-divider />
             <v-list-item :title="lang?.settings" prepend-icon="mdi-cog-outline" />
+            <v-list-item
+              :title="currentLocale === 'zh-CN' ? lang?.languageNameEn : lang?.languageNameZh"
+              :subtitle="lang?.language"
+              prepend-icon="mdi-translate"
+              data-test="switch-language"
+              @click="setLocale(currentLocale === 'zh-CN' ? 'en-US' : 'zh-CN')"
+            />
             <v-list-item :title="lang?.logout" prepend-icon="mdi-logout" @click="auth.logout" />
           </v-list>
         </v-menu>

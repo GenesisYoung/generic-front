@@ -1,6 +1,6 @@
 import http from '@/api/http'
 import { hasPermission, type PermissionSet } from '@/assets/config/auth'
-import { lan } from '@/lang/china_zh'
+import { lan } from '@/lang'
 import type { Identity, TokenPair } from '@/types/auth'
 import { globalUtil } from '@/utils/util'
 import { defineStore } from 'pinia'

@@ -1,4 +1,5 @@
 import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs'
+import { currentLocale } from '@/lang'
 
 type MessageHandler<T> = (payload: T) => void
 
@@ -15,7 +16,8 @@ class WebSocketService {
       brokerURL: import.meta.env.VITE_MESSAGE_URL,
 
       // Sent as native headers on the STOMP CONNECT frame.
-      connectHeaders: { Authorization: `Bearer ${token}` },
+      // Accept-Language: pushed notifications are rendered in the page's language.
+      connectHeaders: { Authorization: `Bearer ${token}`, 'Accept-Language': currentLocale },
 
       reconnectDelay: 5000, // 0 disables automatic reconnect
       heartbeatIncoming: 10000,

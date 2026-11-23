@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import {
   auditApi,
@@ -167,6 +168,7 @@ async function initialize() {
     metadata.value = result
     ready.value = true
     await load()
+    if (token === generation) openCreateFromLink()
   } catch (e) {
     if (token === generation) {
       error.value = message(e)
@@ -244,6 +246,19 @@ async function exportList() {
   } finally {
     saving.value = false
   }
+}
+// The customer order list links here with ?createFor=<order number>: open the
+// create dialog with that number filled in, then drop the query so a reload
+// does not open it again.
+const route = useRoute()
+const router = useRouter()
+function openCreateFromLink() {
+  const orderNumber = route?.query.createFor
+  if (typeof orderNumber !== 'string' || !orderNumber.trim()) return
+  void router?.replace({ query: { ...route.query, createFor: undefined } })
+  if (!metadata.value.canCreate) return
+  openEditor()
+  draft.value.orderNumber = orderNumber.trim()
 }
 function openEditor(t?: Task) {
   draft.value = t ? clone(t) : emptyDraft()

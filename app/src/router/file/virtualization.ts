@@ -24,12 +24,67 @@ const virtualization: Route[] = [
     },
   },
   {
+    path: '/pmc/dashboard',
+    name: 'pmcDashboard',
+    component: () => import('@/views/virtulization/pmc/PmcDashboard.vue'),
+    meta: {
+      title: 'pmcDashboard',
+      icon: 'mdi-view-dashboard-outline',
+      requireAuth: true,
+      permission: ['menu.pmcDashboard'],
+    },
+  },
+  {
+    path: '/purchase/dashboard',
+    name: 'purchaseDashboard',
+    component: () => import('@/views/virtulization/purchase/PurchaseDashboard.vue'),
+    meta: {
+      title: 'purchaseDashboard',
+      icon: 'mdi-view-dashboard-variant-outline',
+      requireAuth: true,
+      permission: ['menu.purchaseDashboard'],
+    },
+  },
+  {
+    path: '/pmc/customer-orders',
+    name: 'customerOrderReview',
+    component: () => import('@/views/virtulization/pmc/CustomerOrderReview.vue'),
+    meta: {
+      title: 'customerOrderReview',
+      icon: 'mdi-cart-arrow-down',
+      requireAuth: true,
+      permission: ['menu.customerOrder.read'],
+    },
+  },
+  {
     path: '/purchase/followups',
     name: 'followUpTodo',
     component: () => import('@/views/virtulization/purchase/FollowUpTodo.vue'),
     meta: {
       title: 'followUpTodo',
       icon: 'mdi-phone-check-outline',
+      requireAuth: true,
+      permission: ['menu.purchaseOrder.read'],
+    },
+  },
+  {
+    path: '/purchase/exceptions',
+    name: 'purchaseExceptions',
+    component: () => import('@/views/virtulization/purchase/PurchaseExceptions.vue'),
+    meta: {
+      title: 'purchaseExceptions',
+      icon: 'mdi-alert-octagon-outline',
+      requireAuth: true,
+      permission: ['menu.purchaseException.read'],
+    },
+  },
+  {
+    path: '/purchase/placements',
+    name: 'placementTasks',
+    component: () => import('@/views/virtulization/purchase/PlacementTasks.vue'),
+    meta: {
+      title: 'placementTasks',
+      icon: 'mdi-cart-clock',
       requireAuth: true,
       permission: ['menu.purchaseOrder.read'],
     },
