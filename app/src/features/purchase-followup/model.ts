@@ -4,7 +4,7 @@ import { fmt, lan } from '@/lang'
  * Types and pure helpers for purchase order follow-up (mirrors the backend's
  * FollowUpTodoItem, FollowUpRecordRequest and FollowUpRecordView).
  */
-export type FollowUpStage = 'INITIAL' | 'INTENSIFIED' | 'DAILY' | 'OVERDUE'
+export type FollowUpStage = 'INITIAL' | 'INTENSIFIED' | 'DAILY' | 'NOTIFY' | 'OVERDUE'
 export type MaterialStatus = 'ON_TRACK' | 'AT_RISK' | 'DELAYED'
 export type CheckpointStatus = 'OPEN' | 'DONE' | 'MISSED' | 'CANCELLED'
 
@@ -23,6 +23,9 @@ export interface TodoItem {
   supplierName: string | null
   orderDate: string
   expectedDeliveryDate: string | null
+  /** The order's follow-up template; null when the order has none (the default applies). */
+  templateId: number | null
+  templateName: string | null
 }
 
 export interface FollowUpForm {
@@ -67,6 +70,7 @@ export const stageLabels: Record<FollowUpStage, string> = {
   INITIAL: lan.followUpStageInitial ?? 'INITIAL',
   INTENSIFIED: lan.followUpStageIntensified ?? 'INTENSIFIED',
   DAILY: lan.followUpStageDaily ?? 'DAILY',
+  NOTIFY: lan.followUpStageNotify ?? 'NOTIFY',
   OVERDUE: lan.followUpStageOverdue ?? 'OVERDUE',
 }
 
@@ -104,7 +108,7 @@ export function validateForm(form: FollowUpForm): string {
   return ''
 }
 
-/** The request body for POST /purchase-orders/{id}/followups. */
+/** The request body for POST /purchase-orders/{id}/followups and /followups/checkpoints/{id}/complete. */
 export function toRequest(form: FollowUpForm) {
   return {
     materialStatus: form.materialStatus,

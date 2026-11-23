@@ -2,14 +2,17 @@
 /**
  * Purchaser's follow-up to-do list (route /purchase/followups).
  *
- * Shows my checkpoints whose window is open now, the ones ending first on top.
- * "Record follow-up" opens a dialog that saves a follow-up record; when it completes the
- * window, the row leaves the list. The backend stamps the time itself, so a
- * follow-up always counts for today's window.
+ * Shows my follow-up tasks whose window is open now, the ones ending first on
+ * top. Each task comes from the order's follow-up template. "Complete
+ * follow-up" saves a follow-up record for that one task and marks it complete,
+ * so the row leaves the list. "Change template" switches the order to another
+ * template and re-plans its open tasks.
  */
 import { computed, onMounted, ref } from 'vue'
 import { fmt, lan } from '@/lang'
 import { followUpApi, type OrderFollowUps } from '@/features/purchase-followup/api'
+import { templateApi } from '@/features/followup-template/api'
+import type { FollowUpTemplate } from '@/features/followup-template/model'
 import { useAuthStore } from '@/stores/auth'
 import ExceptionReportDialog from '@/features/purchase-exception/ExceptionReportDialog.vue'
 import type { PurchaseException } from '@/features/purchase-exception/model'
@@ -29,6 +32,7 @@ import {
 const rows = ref<TodoItem[]>([])
 const auth = useAuthStore()
 const canReport = computed(() => auth.can('menu.purchaseException.create'))
+const canChangeTemplate = computed(() => auth.can('menu.purchaseOrder.update'))
 const reportFor = ref<TodoItem | null>(null)
 const showReport = computed({
   get: () => reportFor.value !== null,
@@ -47,6 +51,18 @@ const form = ref<FollowUpForm>(emptyForm())
 const saving = ref(false)
 const dialogError = ref('')
 const history = ref<OrderFollowUps | null>(null)
+
+const templates = ref<FollowUpTemplate[]>([])
+const templateFor = ref<TodoItem | null>(null)
+const showTemplate = computed({
+  get: () => templateFor.value !== null,
+  set: (v: boolean) => {
+    if (!v) templateFor.value = null
+  },
+})
+const templateId = ref<number | null>(null)
+const templateError = ref('')
+const applying = ref(false)
 
 const materialOptions = (Object.keys(materialStatusLabels) as MaterialStatus[]).map((value) => ({
   value,
@@ -95,18 +111,49 @@ async function save() {
   if (dialogError.value) return
   saving.value = true
   try {
-    const saved = await followUpApi.record(item.purchaseOrderId, form.value)
-    const done = saved.completedCheckpoint?.id
-    if (done != null) rows.value = rows.value.filter((r) => r.checkpointId !== done)
-    notice.value =
-      done != null
-        ? fmt(lan.followUpSavedCheckpoint, item.poNo)
-        : fmt(lan.followUpSavedExtra, item.poNo)
+    await followUpApi.complete(item.checkpointId, form.value)
+    rows.value = rows.value.filter((r) => r.checkpointId !== item.checkpointId)
+    notice.value = fmt(lan.followUpSavedCheckpoint, item.poNo)
     showDialog.value = false
   } catch (e) {
     dialogError.value = message(e)
   } finally {
     saving.value = false
+  }
+}
+
+async function openTemplate(item: TodoItem) {
+  templateFor.value = item
+  templateId.value = item.templateId
+  templateError.value = ''
+  if (templates.value.length === 0) {
+    try {
+      templates.value = await templateApi.list()
+    } catch (e) {
+      templateError.value = message(e)
+    }
+  }
+}
+
+async function applyTemplate() {
+  const item = templateFor.value
+  if (!item) return
+  const chosen = templates.value.find((t) => t.id === Number(templateId.value))
+  if (!chosen) {
+    templateError.value = lan.followUpChooseTemplate ?? ''
+    return
+  }
+  applying.value = true
+  templateError.value = ''
+  try {
+    const open = await templateApi.applyToOrder(item.purchaseOrderId, chosen.id)
+    notice.value = fmt(lan.followUpTemplateChanged, item.poNo, chosen.name, open)
+    templateFor.value = null
+    await load()
+  } catch (e) {
+    templateError.value = message(e)
+  } finally {
+    applying.value = false
   }
 }
 
@@ -140,6 +187,7 @@ onMounted(load)
           <tr>
             <th>{{ lan.followUpColPoNo }}</th>
             <th>{{ lan.followUpColSupplier }}</th>
+            <th>{{ lan.followUpColTemplate }}</th>
             <th>{{ lan.followUpColStage }}</th>
             <th>{{ lan.followUpColWindow }}</th>
             <th>{{ lan.followUpColDue }}</th>
@@ -152,6 +200,7 @@ onMounted(load)
           <tr v-for="item in rows" :key="item.checkpointId" data-test="todo-row">
             <td>{{ item.poNo }}</td>
             <td>{{ item.supplierName || item.supplierCode || '—' }}</td>
+            <td data-test="template">{{ item.templateName || '—' }}</td>
             <td>{{ stageLabels[item.stage] }} · {{ fmt(lan.followUpNth, item.seq) }}</td>
             <td>{{ item.windowStart }} ~ {{ item.windowEnd }}</td>
             <td>
@@ -171,6 +220,15 @@ onMounted(load)
                 >{{ lan.followUpRecord }}</v-btn
               >
               <v-btn
+                v-if="canChangeTemplate"
+                size="small"
+                variant="text"
+                class="ml-1"
+                data-test="change-template"
+                @click="openTemplate(item)"
+                >{{ lan.followUpChangeTemplate }}</v-btn
+              >
+              <v-btn
                 v-if="canReport"
                 size="small"
                 color="error"
@@ -183,7 +241,7 @@ onMounted(load)
             </td>
           </tr>
           <tr v-if="loaded && !loading && !error && rows.length === 0">
-            <td colspan="8" class="text-center text-medium-emphasis py-6" data-test="empty">
+            <td colspan="9" class="text-center text-medium-emphasis py-6" data-test="empty">
               {{ lan.followUpEmpty }}
             </td>
           </tr>
@@ -254,6 +312,40 @@ onMounted(load)
           <v-btn color="primary" :loading="saving" data-test="save" @click="save">{{
             lan.save
           }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="showTemplate" max-width="480">
+      <v-card v-if="templateFor" data-test="template-dialog">
+        <v-card-title class="text-wrap">
+          {{ fmt(lan.followUpChangeTemplateTitle, templateFor.poNo) }}
+        </v-card-title>
+        <v-card-text>
+          <p class="text-body-2 mb-3">{{ lan.followUpChangeTemplateHint }}</p>
+          <v-select
+            v-model="templateId"
+            :items="templates"
+            item-title="name"
+            item-value="id"
+            :label="lan.followUpChooseTemplate"
+            data-test="template-select"
+          />
+          <v-alert v-if="templateError" type="error" variant="tonal" data-test="template-error">
+            {{ templateError }}
+          </v-alert>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn :disabled="applying" @click="templateFor = null">{{ lan.cancel }}</v-btn>
+          <v-btn
+            color="primary"
+            :loading="applying"
+            data-test="apply-template"
+            @click="applyTemplate"
+          >
+            {{ lan.save }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

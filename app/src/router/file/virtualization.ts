@@ -68,6 +68,17 @@ const virtualization: Route[] = [
     },
   },
   {
+    path: '/purchase/followup-templates',
+    name: 'followUpTemplates',
+    component: () => import('@/views/virtulization/purchase/FollowUpTemplates.vue'),
+    meta: {
+      title: 'followUpTemplates',
+      icon: 'mdi-calendar-clock-outline',
+      requireAuth: true,
+      permission: ['menu.followupTemplate.read', 'menu.followupTemplate.update'],
+    },
+  },
+  {
     path: '/purchase/exceptions',
     name: 'purchaseExceptions',
     component: () => import('@/views/virtulization/purchase/PurchaseExceptions.vue'),
