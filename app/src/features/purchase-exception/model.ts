@@ -8,15 +8,44 @@ export const CATEGORIES = ['DELAY', 'SHORTAGE', 'QUALITY', 'PRICE', 'CAPACITY', 
 export const SEVERITIES = ['NORMAL', 'HIGH', 'URGENT'] as const
 export type Category = (typeof CATEGORIES)[number]
 export type Severity = (typeof SEVERITIES)[number]
-export type ExceptionStatus = 'REPORTED' | 'ACKNOWLEDGED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
+/**
+ * RESOLVE only proposes a resolution: the exception waits in PENDING_APPROVAL
+ * until the PMC department approves (RESOLVED) or rejects it (IN_PROGRESS).
+ */
+export type ExceptionStatus =
+  | 'REPORTED'
+  | 'ACKNOWLEDGED'
+  | 'IN_PROGRESS'
+  | 'PENDING_APPROVAL'
+  | 'RESOLVED'
+  | 'CLOSED'
 export type ExceptionAction =
   | 'REPORT'
   | 'ACKNOWLEDGE'
   | 'START'
   | 'COMMENT'
   | 'RESOLVE'
+  | 'APPROVE'
+  | 'REJECT'
   | 'CLOSE'
   | 'REOPEN'
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+/** Which exceptions the list shows: not yet resolved, all, or waiting for PMC approval. */
+export type ListView = 'open' | 'all' | 'approval'
+
+/** One PMC approval task: created each time a resolution is proposed. */
+export interface ExceptionApproval {
+  id: number
+  status: ApprovalStatus
+  proposedResolution: string
+  requestedBy: number
+  requestedByName: string | null
+  requestedAt: string
+  decidedBy: number | null
+  decidedByName: string | null
+  decidedAt: string | null
+  decisionComment: string | null
+}
 
 export interface ExceptionLog {
   action: ExceptionAction
@@ -53,6 +82,8 @@ export interface PurchaseException {
   allowedActions: ExceptionAction[]
   /** Only filled in the detail answer. */
   history: ExceptionLog[]
+  /** PMC approval tasks, oldest first; only filled in the detail answer. */
+  approvals?: ExceptionApproval[]
 }
 
 export interface ExceptionPage {
@@ -61,6 +92,10 @@ export interface ExceptionPage {
   totalPages: number
   page: number
   openCount: number
+  /** Exceptions waiting for PMC approval; 0 outside the PMC department. */
+  approvalCount?: number
+  /** The user is in the PMC department and approves resolutions. */
+  canApprove?: boolean
   canReport: boolean
 }
 
@@ -97,12 +132,35 @@ export function reportFormError(f: ReportForm): string | null {
   return null
 }
 
-/** Actions that need text: the comment, the resolution, or the reason to reopen. */
+/** Actions that need text: the comment, the resolution, the reason to reopen or to reject. */
 export function actionNeedsText(a: ExceptionAction): boolean {
-  return a === 'COMMENT' || a === 'RESOLVE' || a === 'REOPEN'
+  return a === 'COMMENT' || a === 'RESOLVE' || a === 'REOPEN' || a === 'REJECT'
 }
 
-export function label(group: 'Category' | 'Severity' | 'Status' | 'Action', value: string): string {
+/** Actions whose text is optional but sent when given (a note when approving). */
+export function actionTakesText(a: ExceptionAction): boolean {
+  return actionNeedsText(a) || a === 'APPROVE'
+}
+
+/** The approval task still waiting for PMC, if any. */
+export function pendingApproval(x: PurchaseException): ExceptionApproval | null {
+  return (x.approvals ?? []).find((a) => a.status === 'PENDING') ?? null
+}
+
+export function actionColor(a: ExceptionAction): string {
+  if (a === 'RESOLVE' || a === 'CLOSE' || a === 'APPROVE') return 'success'
+  if (a === 'REJECT') return 'error'
+  return 'primary'
+}
+
+export function approvalColor(s: ApprovalStatus): string {
+  return s === 'APPROVED' ? 'success' : s === 'REJECTED' ? 'error' : 'info'
+}
+
+export function label(
+  group: 'Category' | 'Severity' | 'Status' | 'Action' | 'Approval',
+  value: string,
+): string {
   return lan[`exception${group}_${value}`] ?? value
 }
 
@@ -113,6 +171,8 @@ export function statusColor(s: ExceptionStatus): string {
     case 'ACKNOWLEDGED':
     case 'IN_PROGRESS':
       return 'warning'
+    case 'PENDING_APPROVAL':
+      return 'info'
     case 'RESOLVED':
       return 'success'
     default:

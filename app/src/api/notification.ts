@@ -8,6 +8,7 @@ export type NotificationType =
   | 'FOLLOWUP_MISSED'
   | 'EXCEPTION_REPORTED'
   | 'EXCEPTION_UPDATED'
+  | 'EXCEPTION_APPROVAL'
   | 'CUSTOMER_ORDER_NEW'
   | 'GENERAL'
 
