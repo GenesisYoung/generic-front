@@ -79,6 +79,17 @@ const virtualization: Route[] = [
     },
   },
   {
+    path: '/purchase/followup-plan-groups',
+    name: 'followUpPlanGroups',
+    component: () => import('@/views/virtulization/purchase/FollowUpPlanGroups.vue'),
+    meta: {
+      title: 'followUpPlanGroups',
+      icon: 'mdi-shape-outline',
+      requireAuth: true,
+      permission: ['menu.followupTemplate.read', 'menu.followupTemplate.update'],
+    },
+  },
+  {
     path: '/purchase/exceptions',
     name: 'purchaseExceptions',
     component: () => import('@/views/virtulization/purchase/PurchaseExceptions.vue'),

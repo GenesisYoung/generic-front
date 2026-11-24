@@ -26,6 +26,41 @@ export interface TodoItem {
   /** The order's follow-up template; null when the order has none (the default applies). */
   templateId: number | null
   templateName: string | null
+  /** The plan group whose own follow-up task this is; null = the order's main task. */
+  planGroupId: number | null
+  planGroupName: string | null
+}
+
+/** A to-do filter: every task, only main tasks, or one plan group's tasks. */
+export type SeriesFilter = 'ALL' | 'MAIN' | number
+
+/** The plan groups that appear in the list, by name, for the filter chips. */
+export function groupsInList(items: TodoItem[]): { id: number; name: string; count: number }[] {
+  const byId = new Map<number, { id: number; name: string; count: number }>()
+  for (const i of items) {
+    if (i.planGroupId == null) continue
+    const g = byId.get(i.planGroupId) ?? {
+      id: i.planGroupId,
+      name: i.planGroupName ?? '',
+      count: 0,
+    }
+    g.count++
+    byId.set(i.planGroupId, g)
+  }
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export function filterBySeries(items: TodoItem[], filter: SeriesFilter): TodoItem[] {
+  if (filter === 'ALL') return items
+  if (filter === 'MAIN') return items.filter((i) => i.planGroupId == null)
+  return items.filter((i) => i.planGroupId === filter)
+}
+
+/** "Main task" or the plan group's name, for a task's series. */
+export function seriesLabel(item: Pick<TodoItem, 'planGroupId' | 'planGroupName'>): string {
+  return item.planGroupId == null
+    ? (lan.followUpMainTask ?? '')
+    : item.planGroupName || fmt(lan.followUpGroupFallback, item.planGroupId)
 }
 
 export interface FollowUpForm {

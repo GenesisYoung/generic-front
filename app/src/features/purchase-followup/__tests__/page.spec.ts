@@ -44,6 +44,7 @@ for (const name of [
   'VSpacer',
   'VCheckbox',
   'VProgressLinear',
+  'VChipGroup',
 ])
   stubs[name] = wrapperStub
 stubs.VDialog = dialogStub
@@ -69,6 +70,8 @@ function item(id: number, poNo: string, daysLeft: number): TodoItem {
     expectedDeliveryDate: null,
     templateId: 1,
     templateName: '默认模板',
+    planGroupId: null,
+    planGroupName: null,
   }
 }
 
@@ -183,9 +186,32 @@ describe('FollowUpTodo page', () => {
     await allowed.find('[data-test="template-select"]').setValue(2)
     await allowed.find('[data-test="apply-template"]').trigger('click')
     await flushPromises()
-    expect(tplApi.applyToOrder).toHaveBeenCalledWith(10, 2)
+    expect(tplApi.applyToOrder).toHaveBeenCalledWith(10, 2, null)
     expect(allowed.text()).toContain('PO-A 已改用“铸件 30 天”，现有 3 个未完成任务')
     expect(api.todo).toHaveBeenCalledTimes(3)
+    perms.clear()
+  })
+
+  it("names the plan group of a separate task and switches only that task's template", async () => {
+    api.todo.mockResolvedValue([
+      item(1, 'PO-A', 0),
+      { ...item(2, 'PO-A', 1), planGroupId: 5, planGroupName: '五金' },
+    ])
+    tplApi.list.mockResolvedValue([{ id: 2, name: '铸件 30 天' }])
+    tplApi.applyToOrder.mockResolvedValue(2)
+    perms.add('menu.purchaseOrder.update')
+    const page = mount(Page, { global: { stubs } })
+    await flushPromises()
+    const series = page.findAll('[data-test="series"]').map((c) => c.text())
+    expect(series).toEqual(['主任务', '五金'])
+    expect(page.find('[data-test="series-filter"]').text()).toContain('五金 (1)')
+    await page.findAll('[data-test="change-template"]')[1]!.trigger('click')
+    await flushPromises()
+    expect(page.find('[data-test="template-dialog"]').text()).toContain('五金')
+    await page.find('[data-test="template-select"]').setValue(2)
+    await page.find('[data-test="apply-template"]').trigger('click')
+    await flushPromises()
+    expect(tplApi.applyToOrder).toHaveBeenCalledWith(20, 2, 5)
     perms.clear()
   })
 })

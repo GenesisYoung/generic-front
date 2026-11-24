@@ -58,13 +58,21 @@ export const templateApi = {
       (await http.delete<Envelope<FollowUpTemplate[]>>(`/followup-templates/${id}`)).data,
     )
   },
-  /** Switches a purchase order to a template and re-plans its open tasks. Answers how many are open. */
-  async applyToOrder(purchaseOrderId: number, templateId: number): Promise<number> {
+  /**
+   * Switches one follow-up task series of a purchase order (the main one, or a
+   * plan group's own when planGroupId is given) to a template and re-plans its
+   * open tasks. Answers how many are open.
+   */
+  async applyToOrder(
+    purchaseOrderId: number,
+    templateId: number,
+    planGroupId: number | null = null,
+  ): Promise<number> {
     const result = unwrap(
       (
         await http.put<Envelope<{ openTasks: number }>>(
           `/purchase-orders/${purchaseOrderId}/followup-template`,
-          { templateId },
+          { templateId, planGroupId },
         )
       ).data,
     )
