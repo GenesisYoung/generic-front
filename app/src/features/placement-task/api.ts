@@ -35,6 +35,7 @@ export const placementApi = {
       ).data,
     )
   },
+  /** The caller and the active members of their department. */
   async purchasers(): Promise<Purchaser[]> {
     return unwrap((await http.get<Envelope<Purchaser[]>>('/placement-tasks/purchasers')).data)
   },

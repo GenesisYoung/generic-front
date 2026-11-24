@@ -130,7 +130,7 @@ describe('PlacementTasks page', () => {
     expect(page.find('[data-test="complete"]').exists()).toBe(true)
   })
 
-  it('lets a manager assign a purchaser', async () => {
+  it('lets a department member assign a colleague', async () => {
     perms.add('menu.purchaseOrder.update')
     api.list.mockResolvedValue(pageOf([task(1)], true))
     api.purchasers.mockResolvedValue([{ id: 7, name: '王采购' }])

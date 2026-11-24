@@ -226,6 +226,11 @@ td {
   color: var(--color-error);
 }
 
+.status-pill.warning {
+  background: rgba(var(--v-theme-warning), 0.16);
+  color: var(--color-warning);
+}
+
 .status-pill.neutral {
   background: rgba(var(--v-theme-on-surface), 0.08);
   color: var(--color-on-surface-variant);

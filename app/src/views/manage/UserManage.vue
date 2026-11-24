@@ -142,6 +142,8 @@
               item-title="title"
               item-value="value"
               multiple
+              :hint="lang?.userRoleHint"
+              persistent-hint
             ></v-select>
             <v-text-field :label="lang?.realName" v-model="formUser.realName" />
             <v-text-field :label="lang?.position" v-model="formUser.title" />

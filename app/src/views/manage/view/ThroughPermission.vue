@@ -42,7 +42,12 @@ interface UserOption {
 interface PermissionAccessItem {
   id: number
   permissionCode: string
+  /** What the user holds now: the department default with this page's override applied. */
   granted: boolean
+  /** What the user's department role gives. */
+  defaultGranted: boolean
+  /** True when this page overrides the department default for this user. */
+  overridden: boolean
 }
 
 interface PermissionRegistrationItem {
@@ -179,12 +184,15 @@ async function toggleViewMode() {
 }
 
 /**
- * Grants/revokes a permission for the current user on the current menu.
- * Optimistic update: flip the UI first, roll back on backend failure.
+ * Grants/revokes a permission for the current user on the current menu. The
+ * backend keeps an override only while the value differs from the department
+ * default. Optimistic update: flip the UI first, roll back on backend failure.
  */
 async function togglePermission(perm: PermissionAccessItem) {
   const next = !perm.granted
+  const wasOverridden = perm.overridden
   perm.granted = next
+  perm.overridden = next !== perm.defaultGranted
   const resp = await http.post('permission/manipulate/permission', {
     navId: currentMenu.value?.id,
     userId: currentUser.value?.id,
@@ -193,6 +201,7 @@ async function togglePermission(perm: PermissionAccessItem) {
   })
   if (resp.data.code != 200) {
     perm.granted = !next
+    perm.overridden = wasOverridden
     globalUtil.activeDialog(lan?.error, resp.data.message, undefined)
   }
 }
@@ -354,6 +363,15 @@ onMounted(async () => {
                   >{{ lan?.permissionValue }}: {{ perm.id }}</v-list-item-subtitle
                 >
                 <template #append>
+                  <span
+                    class="status-pill mr-2"
+                    :class="perm.overridden ? 'warning' : 'neutral'"
+                    data-test="permission-source"
+                  >
+                    {{
+                      perm.overridden ? lan?.permissionOverridden : lan?.permissionFromDepartment
+                    }}
+                  </span>
                   <span class="status-pill mr-2" :class="perm.granted ? 'success' : 'neutral'">
                     {{ perm.granted ? lan?.granted : lan?.notGranted }}
                   </span>
