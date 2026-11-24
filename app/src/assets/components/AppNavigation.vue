@@ -1,5 +1,5 @@
 <template>
-  <v-navigation-drawer v-model="drawer" :temporary="mobile" :permanent="!mobile" width="260">
+  <v-navigation-drawer v-model="drawer" :temporary="mobile" :permanent="!mobile" width="260" class="app-navigation">
     <v-list nav density="comfortable" class="pa-2">
       <AppNavigationItem
         v-for="item in menu"

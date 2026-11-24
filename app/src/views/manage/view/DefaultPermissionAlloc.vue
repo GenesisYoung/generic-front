@@ -267,11 +267,11 @@ onMounted(async () => {
 <style scoped>
 .alloc-workspace {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   gap: var(--space-5);
   min-height: 560px;
 }
-@media (max-width: 760px) {
+@media (max-width: 1100px) {
   .alloc-workspace {
     grid-template-columns: 1fr;
   }
@@ -281,6 +281,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 .rail-head {
@@ -308,6 +309,7 @@ onMounted(async () => {
 .roster-title-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-3);
 }
 .roster-title-row h2 {

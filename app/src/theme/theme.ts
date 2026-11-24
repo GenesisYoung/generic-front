@@ -15,6 +15,7 @@ export default interface Theme {
     'surface-light': color
     'surface-variant': color
     'on-surface-variant': color
+    'on-primary'?: color
     primary: color
     'primary-darken-1': color
     secondary: color

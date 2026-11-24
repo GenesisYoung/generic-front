@@ -32,6 +32,6 @@ watch(
 </template>
 <style>
 .v-main {
-  background-color: #080616;
+  background: rgb(var(--v-theme-background));
 }
 </style>

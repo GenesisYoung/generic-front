@@ -68,7 +68,7 @@ function formatTime(iso: string): string {
         </v-badge>
       </v-btn>
     </template>
-    <v-card min-width="320" max-width="400">
+    <v-card class="notification-panel">
       <v-card-title class="d-flex align-center">
         <span>{{ lang?.notifications }}</span>
         <v-spacer />
@@ -108,6 +108,10 @@ function formatTime(iso: string): string {
 </template>
 
 <style scoped>
+.notification-panel {
+  width: min(400px, calc(100vw - 24px));
+}
+
 .notification-unread {
   font-weight: 600;
 }

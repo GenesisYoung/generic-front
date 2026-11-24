@@ -1,7 +1,7 @@
 /**
  * The app's primary color themes (violet palette). Registered in main.ts;
- * dark is the default. Colors follow the Tailwind violet scale
- * (primary: #7C3AED dark / #6D28D9 light).
+ * dark is the default. Muted plum surfaces and a brighter violet accent
+ * keep dense workspaces readable (primary: #A78BFA dark / #6D28D9 light).
  */
 import type Theme from './theme'
 
@@ -46,13 +46,14 @@ const lightTheme: Theme = {
 const darkTheme: Theme = {
   dark: true,
   colors: {
-    background: '#0F0A1E',
-    surface: '#1A1033',
-    'surface-bright': '#2D1B69',
-    'surface-light': '#1A1033',
-    'surface-variant': '#2D1B69',
-    'on-surface-variant': '#DDD6FE',
-    primary: '#7C3AED',
+    background: '#11101B',
+    surface: '#1C192B',
+    'surface-bright': '#302941',
+    'surface-light': '#252035',
+    'surface-variant': '#302941',
+    'on-surface-variant': '#C2BBD5',
+    primary: '#A78BFA',
+    'on-primary': '#21133F',
     'primary-darken-1': '#5B21B6',
     secondary: '#C084FC',
     'secondary-darken-1': '#A855F7',
@@ -62,8 +63,8 @@ const darkTheme: Theme = {
     warning: '#F59E0B',
   },
   variables: {
-    'border-color': '#7C3AED',
-    'border-opacity': 0.24,
+    'border-color': '#C4B5FD',
+    'border-opacity': 0.13,
     'high-emphasis-opacity': 0.87,
     'medium-emphasis-opacity': 0.6,
     'disabled-opacity': 0.38,

@@ -10,9 +10,9 @@ const { tabs } = storeToRefs(tabsStore)
 </script>
 
 <template>
-  <v-container class="pa-0">
-    <v-row align="center" class="mb-12">
-      <v-col>
+  <v-container class="pa-0 workspace-tabs">
+    <v-row align="center" class="ma-0">
+      <v-col class="pa-0">
         <v-tabs v-model="tabsStore.activeTab" show-arrows>
           <v-tab
             v-for="tab in tabs"

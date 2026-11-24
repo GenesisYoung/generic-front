@@ -88,15 +88,41 @@ async function handleLogin() {
 
 <style scoped>
 .login-page {
-  background: linear-gradient(
-    135deg,
-    rgb(var(--v-theme-primary)) 0%,
-    rgb(var(--v-theme-secondary)) 100%
-  );
+  background:
+    radial-gradient(ellipse at 18% 15%, rgba(var(--v-theme-primary), 0.2), transparent 45%),
+    radial-gradient(ellipse at 85% 85%, rgba(var(--v-theme-secondary), 0.12), transparent 45%),
+    rgb(var(--v-theme-background));
 }
 
 .login-container {
   min-height: 100vh;
-  padding: var(--space-4);
+  min-height: 100dvh;
+  padding: 24px;
+}
+
+.login-container :deep(.v-card) {
+  border: 1px solid rgba(var(--v-theme-primary), 0.2);
+  border-radius: 24px !important;
+  box-shadow: 0 24px 80px rgba(10, 6, 24, 0.24) !important;
+  padding: 16px;
+}
+
+.login-container :deep(.v-card-title) {
+  padding-bottom: 28px !important;
+  letter-spacing: -0.025em;
+}
+
+.login-container :deep(.v-btn) {
+  min-height: 48px;
+}
+
+@media (max-width: 599px) {
+  .login-container {
+    padding: 16px;
+  }
+
+  .login-container :deep(.v-card) {
+    padding: 4px;
+  }
 }
 </style>

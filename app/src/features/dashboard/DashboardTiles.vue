@@ -13,7 +13,7 @@ const router = useRouter()
       <v-card
         variant="tonal"
         :color="t.color"
-        class="pa-3 cursor-pointer"
+        class="pa-3 cursor-pointer dashboard-tile"
         :data-test="`tile-${t.key}`"
         @click="router.push(t.to)"
       >

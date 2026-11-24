@@ -27,8 +27,8 @@ onBeforeUnmount(() => window.removeEventListener('focus', refreshPermissions))
 </script>
 
 <template>
-  <v-app id="app">
-    <v-app-bar :title="lang?.title" elevation="1">
+  <v-app id="app" class="erp-shell">
+    <v-app-bar :title="lang?.title" elevation="0" class="app-header">
       <template v-if="mobile" v-slot:prepend>
         <v-app-bar-nav-icon @click="drawer = !drawer" />
       </template>
@@ -63,7 +63,7 @@ onBeforeUnmount(() => window.removeEventListener('focus', refreshPermissions))
     <v-main>
       <TabMenu />
       <Suspense>
-        <v-container fluid>
+        <v-container fluid class="workspace-content">
           <router-view v-slot="{ Component }">
             <keep-alive>
               <component :is="Component" />
