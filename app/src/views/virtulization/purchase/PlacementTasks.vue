@@ -1,12 +1,15 @@
 <script setup lang="ts">
 /**
- * Purchase placement tasks (route /purchase/placements). A task is made when a
- * customer order's order audit is verified with PASS; its POs must be placed
- * within 2 days. There is one role per department: anyone with
+ * Purchase placement tasks (route /purchase/placements), in two sections:
+ * production orders (P..., from purchase plans) and sample orders (YP..., from
+ * purchase applications). A task is made when the old ERP shows a plan or
+ * application that is not confirmed for purchase; its POs must be placed
+ * within 2 days of the document date. There is one role per department: anyone with
  * menu.purchaseOrder.update can take a task or give it to a colleague in their
  * department. Holders of data.purchaseOrder.all see every task; others see
  * their department's tasks and the unassigned ones. A task closes by itself at
- * the first PO the old ERP links to the order, or by hand here.
+ * the first PO the old ERP links to the order, when the old ERP confirms the
+ * document, or by hand here.
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 import { fmt, lan } from '@/lang'
@@ -18,7 +21,10 @@ import {
   doneLabel,
   lineCoverage,
   shortDateTime,
+  sourceLabel,
   validPoNo,
+  PLACEMENT_SECTIONS,
+  type PlacementSection,
   type PlacementTask,
   type Purchaser,
 } from '@/features/placement-task/model'
@@ -28,6 +34,12 @@ const PAGE_SIZE = 20
 const auth = useAuthStore()
 const canUpdate = computed(() => auth.can('menu.purchaseOrder.update'))
 
+const section = ref<PlacementSection>('PRODUCTION')
+const openCounts = ref<Record<PlacementSection, number>>({ PRODUCTION: 0, SAMPLE: 0 })
+const sectionLabels: Record<PlacementSection, string | undefined> = {
+  PRODUCTION: lan.placementSectionProduction,
+  SAMPLE: lan.placementSectionSample,
+}
 const openOnly = ref(true)
 const rows = ref<PlacementTask[]>([])
 const page = ref(1)
@@ -59,15 +71,23 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    const result = await placementApi.list(openOnly.value, page.value - 1, PAGE_SIZE)
+    const result = await placementApi.list(section.value, openOnly.value, page.value - 1, PAGE_SIZE)
     rows.value = result.content
     totalPages.value = result.totalPages
     canAssign.value = result.canAssign
+    if (result.openCounts) openCounts.value = result.openCounts
   } catch (e) {
     error.value = fmt(lan.placementLoadFailed, message(e))
   } finally {
     loading.value = false
   }
+}
+
+function switchSection(next: PlacementSection) {
+  if (section.value === next) return
+  section.value = next
+  page.value = 1
+  void load()
 }
 
 function switchView(next: boolean) {
@@ -152,6 +172,28 @@ onMounted(() => {
       {{ notice }}
     </v-alert>
 
+    <v-tabs :model-value="section" color="primary" class="mb-2">
+      <v-tab
+        v-for="s in PLACEMENT_SECTIONS"
+        :key="s"
+        :value="s"
+        :data-test="`section-${s}`"
+        @click="switchSection(s)"
+      >
+        {{ sectionLabels[s] }}
+        <v-chip
+          v-if="openCounts[s] > 0"
+          size="x-small"
+          class="ml-2"
+          color="primary"
+          variant="tonal"
+          :data-test="`count-${s}`"
+        >
+          {{ openCounts[s] }}
+        </v-chip>
+      </v-tab>
+    </v-tabs>
+
     <v-btn-toggle
       :model-value="openOnly"
       mandatory
@@ -172,7 +214,8 @@ onMounted(() => {
         <tr>
           <th>{{ lan.placementColOrderNo }}</th>
           <th>{{ lan.placementColCustomer }}</th>
-          <th>{{ lan.placementColVerifiedAt }}</th>
+          <th>{{ lan.placementColSource }}</th>
+          <th>{{ lan.placementColStartedAt }}</th>
           <th>{{ lan.placementColDeadline }}</th>
           <th>{{ lan.placementColAssignee }}</th>
           <th class="text-end" :title="lan.placementLinesHint">{{ lan.placementColLines }}</th>
@@ -184,7 +227,8 @@ onMounted(() => {
         <tr v-for="t in rows" :key="t.id" data-test="row">
           <td>{{ t.orderNo }}</td>
           <td>{{ t.customerName || '—' }}</td>
-          <td>{{ shortDateTime(t.auditVerifiedAt) }}</td>
+          <td data-test="source">{{ sourceLabel(t) }}</td>
+          <td>{{ shortDateTime(t.startedAt) }}</td>
           <td>
             <div>{{ shortDateTime(t.deadlineAt) }}</div>
             <v-chip size="small" :color="deadlineColor(t)" variant="tonal" data-test="deadline">
@@ -222,8 +266,13 @@ onMounted(() => {
           </td>
         </tr>
         <tr v-if="!loading && rows.length === 0">
-          <td colspan="8" class="text-center text-medium-emphasis py-6" data-test="empty">
-            {{ openOnly ? lan.placementEmptyOpen : lan.placementEmptyAll }}
+          <td colspan="9" class="text-center text-medium-emphasis py-6" data-test="empty">
+            {{
+              fmt(
+                openOnly ? lan.placementEmptyOpen : lan.placementEmptyAll,
+                sectionLabels[section] ?? '',
+              )
+            }}
           </td>
         </tr>
       </tbody>
