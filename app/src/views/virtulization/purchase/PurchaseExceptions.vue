@@ -2,34 +2,46 @@
 /**
  * Purchasing exceptions (route /purchase/exceptions). Purchasers report
  * supplier problems; PMC, Planning and Operations acknowledge, work on and
- * resolve them; the reporter or the purchasing manager closes them. Every
+ * propose a resolution; the PMC department approves it (or rejects it with a
+ * reason) before it counts as resolved; the reporter or the purchasing
+ * manager closes it. PMC members get an "Awaiting PMC approval" tab (also
+ * opened by ?view=approval from the approval notification). Every
  * step is alerted in real time by the backend. The buttons shown come from
  * the backend's allowedActions, so the page never offers a step the user
  * cannot take.
  */
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { fmt, lan } from '@/lang'
 import { exceptionApi } from '@/features/purchase-exception/api'
 import ExceptionReportDialog from '@/features/purchase-exception/ExceptionReportDialog.vue'
 import {
+  actionColor,
   actionNeedsText,
+  actionTakesText,
+  approvalColor,
   label,
+  pendingApproval,
   severityColor,
   shortDateTime,
   statusColor,
   TEXT_MAX,
   type ExceptionAction,
+  type ListView,
   type PurchaseException,
 } from '@/features/purchase-exception/model'
 
 const PAGE_SIZE = 20
 
-const openOnly = ref(true)
+const route = useRoute()
+const view = ref<ListView>(route?.query?.view === 'approval' ? 'approval' : 'open')
 const rows = ref<PurchaseException[]>([])
 const page = ref(1)
 const totalPages = ref(0)
 const openCount = ref(0)
 const canReport = ref(false)
+const approvalCount = ref(0)
+const canApprove = ref(false)
 const loading = ref(false)
 const error = ref('')
 const notice = ref('')
@@ -51,6 +63,14 @@ const stepActions = computed(() =>
   (selected.value?.allowedActions ?? []).filter((a) => a !== 'COMMENT'),
 )
 const canComment = computed(() => selected.value?.allowedActions.includes('COMMENT') ?? false)
+const pending = computed(() => (selected.value ? pendingApproval(selected.value) : null))
+const emptyText = computed(() =>
+  view.value === 'approval'
+    ? lan.exceptionEmptyApproval
+    : view.value === 'open'
+      ? lan.exceptionEmptyOpen
+      : lan.exceptionEmptyAll,
+)
 
 function message(e: unknown): string {
   return e instanceof Error && e.message ? e.message : (lan.requestFailed ?? '')
@@ -60,11 +80,13 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    const result = await exceptionApi.list(openOnly.value, page.value - 1, PAGE_SIZE)
+    const result = await exceptionApi.list(view.value, page.value - 1, PAGE_SIZE)
     rows.value = result.content
     totalPages.value = result.totalPages
     openCount.value = result.openCount
     canReport.value = result.canReport
+    approvalCount.value = result.approvalCount ?? 0
+    canApprove.value = result.canApprove ?? false
   } catch (e) {
     error.value = fmt(lan.exceptionLoadFailed, message(e))
   } finally {
@@ -72,8 +94,8 @@ async function load() {
   }
 }
 
-function switchView(next: boolean) {
-  openOnly.value = next
+function switchView(next: ListView) {
+  view.value = next
   page.value = 1
   void load()
 }
@@ -107,7 +129,7 @@ async function act(action: ExceptionAction) {
   }
   acting.value = action
   try {
-    const text = actionNeedsText(action) ? comment.value : ''
+    const text = actionTakesText(action) ? comment.value : ''
     selected.value = await exceptionApi.act(current.id, action, text, current.lockVersion)
     comment.value = ''
     void load()
@@ -153,16 +175,24 @@ onMounted(() => {
     </v-alert>
 
     <v-btn-toggle
-      :model-value="openOnly"
+      :model-value="view"
       mandatory
       density="comfortable"
       variant="outlined"
       class="mb-2"
     >
-      <v-btn :value="true" data-test="view-open" @click="switchView(true)">
+      <v-btn value="open" data-test="view-open" @click="switchView('open')">
         {{ fmt(lan.exceptionOpenTab, openCount) }}
       </v-btn>
-      <v-btn :value="false" data-test="view-all" @click="switchView(false)">
+      <v-btn
+        v-if="canApprove"
+        value="approval"
+        data-test="view-approval"
+        @click="switchView('approval')"
+      >
+        {{ fmt(lan.exceptionApprovalTab, approvalCount) }}
+      </v-btn>
+      <v-btn value="all" data-test="view-all" @click="switchView('all')">
         {{ lan.exceptionAllTab }}
       </v-btn>
     </v-btn-toggle>
@@ -207,7 +237,7 @@ onMounted(() => {
         </tr>
         <tr v-if="!loading && rows.length === 0">
           <td colspan="9" class="text-center text-medium-emphasis py-6" data-test="empty">
-            {{ openOnly ? lan.exceptionEmptyOpen : lan.exceptionEmptyAll }}
+            {{ emptyText }}
           </td>
         </tr>
       </tbody>
@@ -245,7 +275,27 @@ onMounted(() => {
           </div>
           <p class="mb-3" style="white-space: pre-wrap">{{ selected.description }}</p>
           <v-alert
-            v-if="selected.resolution"
+            v-if="pending"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+            data-test="pending-approval"
+          >
+            {{
+              fmt(
+                lan.exceptionApprovalPending,
+                pending.requestedByName || pending.requestedBy,
+                shortDateTime(pending.requestedAt),
+                pending.proposedResolution,
+              )
+            }}
+            <div v-if="selected.allowedActions.includes('APPROVE')" class="text-caption mt-1">
+              {{ lan.exceptionApprovalHint }}
+            </div>
+          </v-alert>
+          <v-alert
+            v-else-if="selected.resolution"
             type="success"
             variant="tonal"
             density="compact"
@@ -265,6 +315,39 @@ onMounted(() => {
             {{ label('Action', h.action) }}
             <span v-if="h.comment">: {{ h.comment }}</span>
           </div>
+
+          <template v-if="selected.approvals?.length">
+            <div class="text-subtitle-2 mt-3 mb-1">{{ lan.exceptionApprovals }}</div>
+            <div
+              v-for="ap in selected.approvals"
+              :key="ap.id"
+              class="text-body-2 text-medium-emphasis"
+              data-test="approval"
+            >
+              <v-chip size="x-small" :color="approvalColor(ap.status)" class="mr-1">
+                {{ label('Approval', ap.status) }}
+              </v-chip>
+              {{
+                fmt(
+                  lan.exceptionApprovalLine,
+                  shortDateTime(ap.requestedAt),
+                  ap.requestedByName || ap.requestedBy,
+                  ap.proposedResolution,
+                )
+              }}
+              <div v-if="ap.decidedAt" class="ml-4">
+                {{
+                  fmt(
+                    lan.exceptionApprovalDecided,
+                    label('Approval', ap.status),
+                    ap.decidedByName || ap.decidedBy || '',
+                    shortDateTime(ap.decidedAt),
+                  )
+                }}
+                <span v-if="ap.decisionComment">: {{ ap.decisionComment }}</span>
+              </div>
+            </div>
+          </template>
 
           <template v-if="selected.allowedActions.length">
             <v-textarea
@@ -294,7 +377,7 @@ onMounted(() => {
           <v-btn
             v-for="a in stepActions"
             :key="a"
-            :color="a === 'RESOLVE' || a === 'CLOSE' ? 'success' : 'primary'"
+            :color="actionColor(a)"
             variant="tonal"
             :loading="acting === a"
             :data-test="`act-${a}`"

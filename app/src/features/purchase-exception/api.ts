@@ -1,5 +1,11 @@
 import http from '@/api/http'
-import type { ExceptionAction, ExceptionPage, PurchaseException, ReportForm } from './model'
+import type {
+  ExceptionAction,
+  ExceptionPage,
+  ListView,
+  PurchaseException,
+  ReportForm,
+} from './model'
 
 /** The backend wraps every answer as { status, message, object } and may answer HTTP 200 with status 4xx. */
 interface Envelope<T> {
@@ -25,11 +31,11 @@ function unwrap<T>(env: Envelope<T>): T {
 }
 
 export const exceptionApi = {
-  async list(openOnly: boolean, page: number, size: number): Promise<ExceptionPage> {
+  async list(view: ListView, page: number, size: number): Promise<ExceptionPage> {
     return unwrap(
       (
         await http.get<Envelope<ExceptionPage>>('/purchase-exceptions', {
-          params: { openOnly, page, size },
+          params: { view, page, size },
         })
       ).data,
     )

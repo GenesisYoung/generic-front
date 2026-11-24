@@ -20,6 +20,7 @@ const PAGES: Partial<Record<NotificationDto['type'], string>> = {
   PO_PLACEMENT_DUE: '/purchase/placements',
   EXCEPTION_REPORTED: '/purchase/exceptions',
   EXCEPTION_UPDATED: '/purchase/exceptions',
+  EXCEPTION_APPROVAL: '/purchase/exceptions?view=approval',
   FOLLOWUP_DUE: '/purchase/followups',
   FOLLOWUP_MISSED: '/purchase/followups',
 }
@@ -37,6 +38,7 @@ const ICONS: Record<NotificationDto['type'], string> = {
   FOLLOWUP_MISSED: 'mdi-alarm-off',
   EXCEPTION_REPORTED: 'mdi-alert-octagon-outline',
   EXCEPTION_UPDATED: 'mdi-alert-circle-check-outline',
+  EXCEPTION_APPROVAL: 'mdi-stamper',
   CUSTOMER_ORDER_NEW: 'mdi-cart-arrow-down',
   GENERAL: 'mdi-bell-outline',
 }
