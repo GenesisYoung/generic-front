@@ -31,6 +31,12 @@ describe('follow-up template API', () => {
     await expect(templateApi.applyToOrder(42, 4)).resolves.toBe(3)
     expect(http.put).toHaveBeenCalledWith('/purchase-orders/42/followup-template', {
       templateId: 4,
+      planGroupId: null,
+    })
+    await templateApi.applyToOrder(42, 4, 7)
+    expect(http.put).toHaveBeenLastCalledWith('/purchase-orders/42/followup-template', {
+      templateId: 4,
+      planGroupId: 7,
     })
   })
 

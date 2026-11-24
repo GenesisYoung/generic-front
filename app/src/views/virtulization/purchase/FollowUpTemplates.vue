@@ -165,6 +165,9 @@ onMounted(load)
         <h1 class="text-h5">{{ lan.followUpTemplates }}</h1>
         <div class="text-body-2 text-medium-emphasis">{{ lan.fuTplHint }}</div>
       </div>
+      <v-btn variant="text" to="/purchase/followup-plan-groups" data-test="to-plan-groups">
+        {{ lan.followUpToPlanGroups }}
+      </v-btn>
       <v-btn variant="outlined" :loading="loading" data-test="refresh" @click="load">
         {{ lan.refresh }}
       </v-btn>

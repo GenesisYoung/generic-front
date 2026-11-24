@@ -6,7 +6,9 @@
  * top. Each task comes from the order's follow-up template. "Complete
  * follow-up" saves a follow-up record for that one task and marks it complete,
  * so the row leaves the list. "Change template" switches the order to another
- * template and re-plans its open tasks.
+ * template and re-plans its open tasks. When an order's lines belong to
+ * plan groups that are followed up on their own, each group has its own task
+ * (shown with the group's name); the chips above the table filter by group.
  */
 import { computed, onMounted, ref } from 'vue'
 import { fmt, lan } from '@/lang'
@@ -20,16 +22,24 @@ import {
   NOTE_MAX,
   daysLeftLabel,
   emptyForm,
+  filterBySeries,
+  groupsInList,
   materialStatusLabels,
+  seriesLabel,
   stageLabels,
   urgencyColor,
   validateForm,
   type FollowUpForm,
   type MaterialStatus,
+  type SeriesFilter,
   type TodoItem,
 } from '@/features/purchase-followup/model'
 
 const rows = ref<TodoItem[]>([])
+const seriesFilter = ref<SeriesFilter>('ALL')
+const groupChips = computed(() => groupsInList(rows.value))
+const mainCount = computed(() => rows.value.filter((i) => i.planGroupId == null).length)
+const shown = computed(() => filterBySeries(rows.value, seriesFilter.value))
 const auth = useAuthStore()
 const canReport = computed(() => auth.can('menu.purchaseException.create'))
 const canChangeTemplate = computed(() => auth.can('menu.purchaseOrder.update'))
@@ -146,7 +156,7 @@ async function applyTemplate() {
   applying.value = true
   templateError.value = ''
   try {
-    const open = await templateApi.applyToOrder(item.purchaseOrderId, chosen.id)
+    const open = await templateApi.applyToOrder(item.purchaseOrderId, chosen.id, item.planGroupId)
     notice.value = fmt(lan.followUpTemplateChanged, item.poNo, chosen.name, open)
     templateFor.value = null
     await load()
@@ -180,12 +190,38 @@ onMounted(load)
       {{ fmt(lan.followUpSummary, rows.length, dueToday) }}
     </div>
 
+    <v-chip-group
+      v-if="groupChips.length > 0"
+      v-model="seriesFilter"
+      mandatory
+      selected-class="text-primary"
+      class="mb-2"
+      data-test="series-filter"
+    >
+      <v-chip value="ALL" filter data-test="filter-all">
+        {{ fmt(lan.followUpFilterAll, rows.length) }}
+      </v-chip>
+      <v-chip value="MAIN" filter data-test="filter-main">
+        {{ fmt(lan.followUpFilterMain, mainCount) }}
+      </v-chip>
+      <v-chip
+        v-for="g in groupChips"
+        :key="g.id"
+        :value="g.id"
+        filter
+        :data-test="`filter-group-${g.id}`"
+      >
+        {{ g.name }} ({{ g.count }})
+      </v-chip>
+    </v-chip-group>
+
     <v-card variant="outlined">
       <v-progress-linear v-if="loading" indeterminate />
       <v-table density="comfortable">
         <thead>
           <tr>
             <th>{{ lan.followUpColPoNo }}</th>
+            <th>{{ lan.followUpColSeries }}</th>
             <th>{{ lan.followUpColSupplier }}</th>
             <th>{{ lan.followUpColTemplate }}</th>
             <th>{{ lan.followUpColStage }}</th>
@@ -197,8 +233,17 @@ onMounted(load)
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in rows" :key="item.checkpointId" data-test="todo-row">
+          <tr v-for="item in shown" :key="item.checkpointId" data-test="todo-row">
             <td>{{ item.poNo }}</td>
+            <td data-test="series">
+              <v-chip
+                size="small"
+                :color="item.planGroupId == null ? undefined : 'teal'"
+                :variant="item.planGroupId == null ? 'outlined' : 'tonal'"
+              >
+                {{ seriesLabel(item) }}
+              </v-chip>
+            </td>
             <td>{{ item.supplierName || item.supplierCode || '—' }}</td>
             <td data-test="template">{{ item.templateName || '—' }}</td>
             <td>{{ stageLabels[item.stage] }} · {{ fmt(lan.followUpNth, item.seq) }}</td>
@@ -241,7 +286,7 @@ onMounted(load)
             </td>
           </tr>
           <tr v-if="loaded && !loading && !error && rows.length === 0">
-            <td colspan="9" class="text-center text-medium-emphasis py-6" data-test="empty">
+            <td colspan="10" class="text-center text-medium-emphasis py-6" data-test="empty">
               {{ lan.followUpEmpty }}
             </td>
           </tr>
@@ -320,6 +365,7 @@ onMounted(load)
       <v-card v-if="templateFor" data-test="template-dialog">
         <v-card-title class="text-wrap">
           {{ fmt(lan.followUpChangeTemplateTitle, templateFor.poNo) }}
+          <span v-if="templateFor.planGroupId != null"> · {{ seriesLabel(templateFor) }}</span>
         </v-card-title>
         <v-card-text>
           <p class="text-body-2 mb-3">{{ lan.followUpChangeTemplateHint }}</p>
