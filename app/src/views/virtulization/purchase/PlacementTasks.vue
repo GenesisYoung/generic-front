@@ -2,9 +2,11 @@
 /**
  * Purchase placement tasks (route /purchase/placements). A task is made when a
  * customer order's order audit is verified with PASS; its POs must be placed
- * within 2 days. Purchasing managers (data.purchaseOrder.all) see every task
- * and assign a purchaser; a purchaser sees their own tasks. A task closes by
- * itself at the first PO the old ERP links to the order, or by hand here.
+ * within 2 days. There is one role per department: anyone with
+ * menu.purchaseOrder.update can take a task or give it to a colleague in their
+ * department. Holders of data.purchaseOrder.all see every task; others see
+ * their department's tasks and the unassigned ones. A task closes by itself at
+ * the first PO the old ERP links to the order, or by hand here.
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 import { fmt, lan } from '@/lang'

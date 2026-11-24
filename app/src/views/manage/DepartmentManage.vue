@@ -4,9 +4,10 @@
  *
  * Mirrors DefaultPermissionAlloc.vue: a left rail listing departments
  * (paginated, 20/page) with add ("+") and per-row delete ("-"); selecting a
- * department loads its role roster into the right panel (paginated, 20/page),
- * where each role is marked "Processed" (a role_department_tb link exists) or
- * "Not granted" and can be toggled.
+ * department loads its role roster into the right panel (paginated, 20/page).
+ * A department has ONE role (role_department_tb): its permissions are the
+ * default permissions of every member. Turning another role on replaces the
+ * current one, so the roster is reloaded after each change.
  *
  * A department that still has users assigned to it cannot be deleted — the
  * backend rejects the delete (HTTP 423) and the reason is surfaced in a dialog.
@@ -112,6 +113,13 @@ async function toggleRole(role: RoleItem) {
   if (resp.data.code != 200) {
     role.granted = !next
     globalUtil.activeDialog(lan?.error, resp.data.message, undefined)
+    return
+  }
+  if (next) {
+    // The backend dropped the department's previous role: show that at once.
+    rolesRoster.value.forEach((r) => {
+      if (r.id !== role.id) r.granted = false
+    })
   }
 }
 
@@ -221,6 +229,9 @@ onMounted(async () => {
               <v-chip size="small" variant="tonal">#{{ currentDept.val }}</v-chip>
             </div>
             <p class="roster-desc">{{ lan?.associatedRoles }}</p>
+            <p class="roster-desc" data-test="department-role-hint">
+              {{ lan?.departmentRoleHint }}
+            </p>
           </div>
 
           <v-list v-if="!roleLoading && rolesRoster.length > 0" density="compact">

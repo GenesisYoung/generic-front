@@ -36,7 +36,7 @@ export interface PlacementPage {
   totalElements: number
   totalPages: number
   page: number
-  /** True for purchasing managers (data.purchaseOrder.all): they see and assign every task. */
+  /** True with menu.purchaseOrder.update: the user can assign to themselves or a department colleague. */
   canAssign: boolean
 }
 
