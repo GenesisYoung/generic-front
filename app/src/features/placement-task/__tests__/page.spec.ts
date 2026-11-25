@@ -63,6 +63,7 @@ function task(id: number, extra: Partial<PlacementTask> = {}): PlacementTask {
     orderType: 'PRODUCTION',
     source: 'PURCHASE_PLAN',
     sourceNo: `PL-${id}`,
+    sourceNote: null,
     customerName: 'Acme',
     auditRound: null,
     auditVerifiedAt: null,
@@ -121,7 +122,7 @@ describe('placement task model', () => {
       '手工填写 PO-2',
     )
     expect(doneLabel(task(1, { status: 'DONE', doneSource: 'CONFIRMED' }))).toBe(
-      '旧 ERP 已采购确认',
+      '旧 ERP 已下采购单',
     )
   })
 
@@ -131,6 +132,7 @@ describe('placement task model', () => {
       '采购申请 RQ-1',
     )
     expect(sourceLabel(task(1, { source: 'ORDER_AUDIT', sourceNo: null }))).toBe('订单评审')
+    expect(sourceLabel(task(1, { orderNo: '26394-W53', sourceNo: '26394-W53' }))).toBe('采购计划')
   })
 
   it('accepts PO numbers of 1 to 50 characters', () => {
@@ -200,7 +202,14 @@ describe('PlacementTasks page', () => {
     api.list.mockResolvedValueOnce(pageOf([task(1)], false, { PRODUCTION: 1, SAMPLE: 2 }))
     api.list.mockResolvedValueOnce(
       pageOf(
-        [task(2, { orderNo: 'YP-2', orderType: 'SAMPLE', source: 'PURCHASE_APPLICATION' })],
+        [
+          task(2, {
+            orderNo: 'R261113001',
+            orderType: 'SAMPLE',
+            source: 'PURCHASE_APPLICATION',
+            sourceNote: '26256样品单',
+          }),
+        ],
         false,
         { PRODUCTION: 1, SAMPLE: 2 },
       ),
@@ -212,7 +221,8 @@ describe('PlacementTasks page', () => {
     await page.find('[data-test="section-SAMPLE"]').trigger('click')
     await flushPromises()
     expect(api.list).toHaveBeenLastCalledWith('SAMPLE', true, 0, 20)
-    expect(page.find('[data-test="row"]').text()).toContain('YP-2')
+    expect(page.find('[data-test="row"]').text()).toContain('R261113001')
+    expect(page.find('[data-test="note"]').text()).toBe('26256样品单')
     expect(page.find('[data-test="row"]').text()).not.toContain('P-1')
   })
 

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
  * Purchase placement tasks (route /purchase/placements), in two sections:
- * production orders (P..., from purchase plans) and sample orders (YP..., from
- * purchase applications). A task is made when the old ERP shows a plan or
- * application that is not confirmed for purchase; its POs must be placed
- * within 2 days of the document date. There is one role per department: anyone with
+ * production orders (purchase plans; POs numbered P...) and sample orders
+ * (purchase applications; POs numbered YP...). A task is made when the old ERP
+ * shows a plan or application without a purchase order; its POs must be
+ * placed within 2 days of the document date. There is one role per department: anyone with
  * menu.purchaseOrder.update can take a task or give it to a colleague in their
  * department. Holders of data.purchaseOrder.all see every task; others see
  * their department's tasks and the unassigned ones. A task closes by itself at
@@ -225,7 +225,12 @@ onMounted(() => {
       </thead>
       <tbody>
         <tr v-for="t in rows" :key="t.id" data-test="row">
-          <td>{{ t.orderNo }}</td>
+          <td>
+            <div>{{ t.orderNo }}</div>
+            <div v-if="t.sourceNote" class="text-caption text-medium-emphasis" data-test="note">
+              {{ t.sourceNote }}
+            </div>
+          </td>
           <td>{{ t.customerName || '—' }}</td>
           <td data-test="source">{{ sourceLabel(t) }}</td>
           <td>{{ shortDateTime(t.startedAt) }}</td>

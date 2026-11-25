@@ -2,9 +2,10 @@ import { fmt, lan } from '@/lang'
 
 /**
  * Types and pure helpers for purchase placement tasks (采购下单任务): place the
- * purchase orders of an order within 2 days. Production orders (P...) come from
- * unconfirmed purchase plans, sample orders (YP...) from unconfirmed purchase
- * applications in the old ERP. Mirrors the backend's PlacementTaskView.
+ * purchase orders within 2 days. Production orders come from purchase plans
+ * (their POs are numbered P...), sample orders from purchase applications
+ * (POs numbered YP...) in the old ERP; a task is open until the document has
+ * its first PO. Mirrors the backend's PlacementTaskView.
  */
 export type PlacementStatus = 'OPEN' | 'DONE' | 'SKIPPED'
 
@@ -25,6 +26,8 @@ export interface PlacementTask {
   source: PlacementSource
   /** Purchase plan / application number in the old ERP; null for ORDER_AUDIT. */
   sourceNo: string | null
+  /** Memo of the plan / application; for applications it names the sample order. */
+  sourceNote: string | null
   customerName: string | null
   auditRound: number | null
   auditVerifiedAt: string | null
@@ -94,7 +97,7 @@ export function lineCoverage(t: PlacementTask): string {
   return t.lineCount == null ? String(t.linesWithPo) : `${t.linesWithPo}/${t.lineCount}`
 }
 
-/** "采购计划 PL-1", "采购申请 RQ-1" or "订单评审". */
+/** "采购计划", "采购申请" or "订单评审"; the document number is added when it differs from the order number. */
 export function sourceLabel(t: PlacementTask): string {
   const name =
     t.source === 'PURCHASE_PLAN'
@@ -102,7 +105,7 @@ export function sourceLabel(t: PlacementTask): string {
       : t.source === 'PURCHASE_APPLICATION'
         ? lan.placementSourceApplication
         : lan.placementSourceAudit
-  return t.sourceNo ? `${name ?? ''} ${t.sourceNo}` : (name ?? '')
+  return t.sourceNo && t.sourceNo !== t.orderNo ? `${name ?? ''} ${t.sourceNo}` : (name ?? '')
 }
 
 /** How the task was closed: "关联采购单 PO-1", "手工填写 PO-1" or "旧 ERP 已采购确认". */
