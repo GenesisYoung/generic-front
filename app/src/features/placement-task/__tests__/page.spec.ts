@@ -16,6 +16,7 @@ import {
   deadlineLabel,
   doneLabel,
   lineCoverage,
+  sourceLabel,
   validPoNo,
   type PlacementTask,
 } from '@/features/placement-task/model'
@@ -32,7 +33,11 @@ const inputStub = defineComponent({
   template:
     '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 })
-const stubs: Record<string, Component> = { VBtn: buttonStub, VTextField: inputStub }
+const stubs: Record<string, Component> = {
+  VBtn: buttonStub,
+  VTab: buttonStub,
+  VTextField: inputStub,
+}
 for (const name of [
   'VContainer',
   'VAlert',
@@ -47,16 +52,22 @@ for (const name of [
   'VCardText',
   'VCardActions',
   'VSelect',
+  'VTabs',
 ])
   stubs[name] = wrapperStub
 
 function task(id: number, extra: Partial<PlacementTask> = {}): PlacementTask {
   return {
     id,
-    orderNo: `SO-${id}`,
+    orderNo: `P-${id}`,
+    orderType: 'PRODUCTION',
+    source: 'PURCHASE_PLAN',
+    sourceNo: `PL-${id}`,
+    sourceNote: null,
     customerName: 'Acme',
-    auditRound: 1,
-    auditVerifiedAt: '2026-11-20T08:30:00',
+    auditRound: null,
+    auditVerifiedAt: null,
+    startedAt: '2026-11-20T08:30:00',
     deadlineAt: '2026-11-22T08:30:00',
     hoursLeft: 29,
     status: 'OPEN',
@@ -73,8 +84,12 @@ function task(id: number, extra: Partial<PlacementTask> = {}): PlacementTask {
   }
 }
 
-function pageOf(content: PlacementTask[], canAssign = false) {
-  return { content, totalElements: content.length, totalPages: 1, page: 0, canAssign }
+function pageOf(
+  content: PlacementTask[],
+  canAssign = false,
+  openCounts = { PRODUCTION: 0, SAMPLE: 0 },
+) {
+  return { content, totalElements: content.length, totalPages: 1, page: 0, canAssign, openCounts }
 }
 
 afterEach(() => {
@@ -106,6 +121,18 @@ describe('placement task model', () => {
     expect(doneLabel(task(1, { status: 'DONE', doneSource: 'MANUAL', donePoNo: 'PO-2' }))).toBe(
       '手工填写 PO-2',
     )
+    expect(doneLabel(task(1, { status: 'DONE', doneSource: 'CONFIRMED' }))).toBe(
+      '旧 ERP 已下采购单',
+    )
+  })
+
+  it('names the source document', () => {
+    expect(sourceLabel(task(1))).toBe('采购计划 PL-1')
+    expect(sourceLabel(task(1, { source: 'PURCHASE_APPLICATION', sourceNo: 'RQ-1' }))).toBe(
+      '采购申请 RQ-1',
+    )
+    expect(sourceLabel(task(1, { source: 'ORDER_AUDIT', sourceNo: null }))).toBe('订单评审')
+    expect(sourceLabel(task(1, { orderNo: '26394-W53', sourceNo: '26394-W53' }))).toBe('采购计划')
   })
 
   it('accepts PO numbers of 1 to 50 characters', () => {
@@ -121,9 +148,10 @@ describe('PlacementTasks page', () => {
     api.list.mockResolvedValue(pageOf([task(1)]))
     const page = mount(Page, { global: { stubs } })
     await flushPromises()
-    expect(api.list).toHaveBeenCalledWith(true, 0, 20)
+    expect(api.list).toHaveBeenCalledWith('PRODUCTION', true, 0, 20)
     const row = page.find('[data-test="row"]')
-    expect(row.text()).toContain('SO-1')
+    expect(row.text()).toContain('P-1')
+    expect(row.find('[data-test="source"]').text()).toBe('采购计划 PL-1')
     expect(row.find('[data-test="lines"]').text()).toBe('0/3')
     expect(row.find('[data-test="assignee"]').text()).toBe(lan.placementUnassigned)
     expect(page.find('[data-test="assign"]').exists()).toBe(false)
@@ -168,6 +196,34 @@ describe('PlacementTasks page', () => {
     await flushPromises()
     expect(page.find('[data-test="notice"]').text()).toBe(lan.placementCompleted)
     expect(api.list).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps sample orders in their own section', async () => {
+    api.list.mockResolvedValueOnce(pageOf([task(1)], false, { PRODUCTION: 1, SAMPLE: 2 }))
+    api.list.mockResolvedValueOnce(
+      pageOf(
+        [
+          task(2, {
+            orderNo: 'R261113001',
+            orderType: 'SAMPLE',
+            source: 'PURCHASE_APPLICATION',
+            sourceNote: '26256样品单',
+          }),
+        ],
+        false,
+        { PRODUCTION: 1, SAMPLE: 2 },
+      ),
+    )
+    const page = mount(Page, { global: { stubs } })
+    await flushPromises()
+    expect(page.find('[data-test="count-SAMPLE"]').text()).toBe('2')
+
+    await page.find('[data-test="section-SAMPLE"]').trigger('click')
+    await flushPromises()
+    expect(api.list).toHaveBeenLastCalledWith('SAMPLE', true, 0, 20)
+    expect(page.find('[data-test="row"]').text()).toContain('R261113001')
+    expect(page.find('[data-test="note"]').text()).toBe('26256样品单')
+    expect(page.find('[data-test="row"]').text()).not.toContain('P-1')
   })
 
   it('shows nothing to do when the user may not update', async () => {

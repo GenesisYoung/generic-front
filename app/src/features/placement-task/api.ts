@@ -1,5 +1,5 @@
 import http from '@/api/http'
-import type { PlacementPage, PlacementTask, Purchaser } from './model'
+import type { PlacementPage, PlacementSection, PlacementTask, Purchaser } from './model'
 
 /** The backend wraps every answer as { status, message, object } and may answer HTTP 200 with status 4xx. */
 interface Envelope<T> {
@@ -25,12 +25,20 @@ function unwrap<T>(env: Envelope<T>): T {
 }
 
 export const placementApi = {
-  /** openOnly: open tasks, nearest deadline first; otherwise open and done, newest first. */
-  async list(openOnly: boolean, page: number, size: number): Promise<PlacementPage> {
+  /**
+   * Tasks of one section (production or sample orders). openOnly: open tasks,
+   * nearest deadline first; otherwise open and done, newest first.
+   */
+  async list(
+    type: PlacementSection,
+    openOnly: boolean,
+    page: number,
+    size: number,
+  ): Promise<PlacementPage> {
     return unwrap(
       (
         await http.get<Envelope<PlacementPage>>('/placement-tasks', {
-          params: { openOnly, page, size },
+          params: { type, openOnly, page, size },
         })
       ).data,
     )
