@@ -6,6 +6,7 @@
  */
 import AppNavigation from '@/assets/components/AppNavigation.vue'
 import TabMenu from '@/assets/components/TabMenu.vue'
+import ThemeToggle from '@/assets/components/ThemeToggle.vue'
 import NotificationBell from '@/assets/components/notification/NotificationBell.vue'
 import { currentLocale, setLocale } from '@/lang'
 import { useAuthStore } from '@/stores/auth'
@@ -33,6 +34,7 @@ onBeforeUnmount(() => window.removeEventListener('focus', refreshPermissions))
         <v-app-bar-nav-icon @click="drawer = !drawer" />
       </template>
       <template v-slot:append>
+        <ThemeToggle />
         <NotificationBell />
         <v-menu location="bottom end">
           <template v-slot:activator="{ props: menuProps }">

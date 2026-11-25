@@ -16,6 +16,8 @@ const mapping: Record<string, string> = {
   supplierManagement: '供应商管理',
   reportManagement: '报表管理',
   settings: '设置',
+  switchToLightTheme: '切换为浅色模式',
+  switchToDarkTheme: '切换为深色模式',
   pageNotFoundTitle: '抱歉，页面未找到',
   pageNotFoundMessage: '您访问的页面不存在或已被删除。',
   goBackHome: '返回主页',

@@ -5,6 +5,7 @@
  * store; on success the store redirects to home. Standalone full-screen
  * layout (own <v-app>), since it renders outside the MainEntry shell.
  */
+import ThemeToggle from '@/assets/components/ThemeToggle.vue'
 import { useAuthStore } from '@/stores/auth'
 import { ref } from 'vue'
 
@@ -36,6 +37,7 @@ async function handleLogin() {
 <template>
   <v-app>
     <v-main class="login-page">
+      <ThemeToggle class="login-theme-toggle" />
       <v-container class="d-flex align-center justify-center login-container">
         <v-card max-width="420" width="100%" elevation="8" rounded="lg" :loading="loading">
           <v-card-title class="text-h5 font-weight-bold pa-6 pb-2"> Sign In </v-card-title>
@@ -92,6 +94,13 @@ async function handleLogin() {
     radial-gradient(ellipse at 18% 15%, rgba(var(--v-theme-primary), 0.2), transparent 45%),
     radial-gradient(ellipse at 85% 85%, rgba(var(--v-theme-secondary), 0.12), transparent 45%),
     rgb(var(--v-theme-background));
+}
+
+.login-theme-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
 }
 
 .login-container {

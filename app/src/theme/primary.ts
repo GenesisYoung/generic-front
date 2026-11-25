@@ -8,13 +8,14 @@ import type Theme from './theme'
 const lightTheme: Theme = {
   dark: false,
   colors: {
-    background: '#F5F3FF',
+    background: '#F7F8FC',
     surface: '#FFFFFF',
-    'surface-bright': '#EDE9FE',
-    'surface-light': '#F5F3FF',
-    'surface-variant': '#DDD6FE',
-    'on-surface-variant': '#4C1D95',
+    'surface-bright': '#FFFFFF',
+    'surface-light': '#FAFAFD',
+    'surface-variant': '#EDEAF5',
+    'on-surface-variant': '#625B71',
     primary: '#6D28D9',
+    'on-primary': '#FFFFFF',
     'primary-darken-1': '#4C1D95',
     secondary: '#A855F7',
     'secondary-darken-1': '#7E22CE',
@@ -24,7 +25,7 @@ const lightTheme: Theme = {
     warning: '#D97706',
   },
   variables: {
-    'border-color': '#6D28D9',
+    'border-color': '#625B71',
     'border-opacity': 0.12,
     'high-emphasis-opacity': 0.87,
     'medium-emphasis-opacity': 0.6,

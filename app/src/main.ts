@@ -20,6 +20,7 @@ import App from './App.vue'
 import router from './router'
 import { useAuthStore } from './stores/auth'
 import { darkTheme, lightTheme } from './theme/primary'
+import { readTheme } from './theme/preference'
 
 const pinia = createPinia()
 
@@ -34,7 +35,7 @@ const vuetify = createVuetify({
   components,
   directives,
   theme: {
-    defaultTheme: 'dark',
+    defaultTheme: readTheme(),
     themes: {
       light: lightTheme,
       dark: darkTheme,

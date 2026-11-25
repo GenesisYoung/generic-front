@@ -15,6 +15,8 @@ const mapping: Record<string, string> = {
   supplierManagement: 'Supplier Management',
   reportManagement: 'Report Management',
   settings: 'Settings',
+  switchToLightTheme: 'Switch to light mode',
+  switchToDarkTheme: 'Switch to dark mode',
   pageNotFoundTitle: 'Page Not Found',
   pageNotFoundMessage: 'The page you are looking for does not exist or has been moved.',
   goBackHome: 'Go Back Home',
