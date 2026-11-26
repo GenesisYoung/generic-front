@@ -56,9 +56,23 @@ export interface OrderLine {
   unit: string | null
   productBomCode: string | null
   packagingBomCode: string | null
+  /** Priced BOM lines of this order line; null without any. */
+  materialCost: number | null
+  /** This line's share of the quotation total, and per unit; null without priced material. */
+  totalPrice: number | null
+  unitPrice: number | null
 }
 
+/** Where a price comes from: the material's most recent purchase order line, or the purchase strategy (采购策略). */
+export type PriceSource = 'LAST_PURCHASE' | 'STRATEGY' | 'MANUAL'
+
+/** The selection key of the last purchase price (a strategy price is chosen by its supplier code). */
+export const LAST_PURCHASE_KEY = 'LAST_PURCHASE'
+
 export interface SupplierPrice {
+  /** What CalculateRequest.selections names to choose this price. */
+  key: string
+  source: PriceSource
   supplierCode: string
   supplierName: string | null
   price: number
@@ -66,11 +80,16 @@ export interface SupplierPrice {
   currency: string | null
   validFrom: string | null
   validTo: string | null
+  /** Set for LAST_PURCHASE. */
+  purchaseDate: string | null
+  poNo: string | null
 }
 
 export interface QuotationItem {
   kind: ItemKind
   bomCode: string | null
+  /** Order line (ORDCORD2.ERI) the BOM line belongs to. */
+  lineId: string | null
   productCode: string | null
   lineNo: number | null
   level: number | null
@@ -82,7 +101,9 @@ export interface QuotationItem {
   qtyPerUnit: number
   orderQty: number | null
   totalQty: number
+  /** Last purchase price first (when bought before), then strategy prices, cheapest first. */
   suppliers: SupplierPrice[]
+  selectedKey: string | null
   selectedSupplierCode: string | null
   selectedSupplierName: string | null
   unitPrice: number | null
@@ -90,6 +111,11 @@ export interface QuotationItem {
   cheapestPrice: number | null
   basePrice: number | null
   priceCheck: PriceCheck
+  /** Source of the price used; null without any price. */
+  priceSource: PriceSource | null
+  /** Set when priceSource is LAST_PURCHASE. */
+  lastPurchaseDate: string | null
+  lastPurchaseNo: string | null
 }
 
 export interface FeeAmount {
@@ -125,9 +151,12 @@ export interface QuotationPlan {
 
 /** What the purchaser changed on the plan page; sent with every recalculation and export. */
 export interface CalculateRequest {
+  /** Material code -> SupplierPrice.key (LAST_PURCHASE or a strategy supplier code). */
   selections: Record<string, string>
   fees: Fee[] | null
   marginRate: number | null
+  /** Material code -> unit price INCLUDING tax typed in for a material without any price. */
+  manualPrices: Record<string, number>
 }
 
 export const FEE_CODES = [
@@ -170,6 +199,19 @@ export function checkLabel(c: PriceCheck): string {
   return lan[`quotationCheck_${c}`] ?? c
 }
 
+export function sourceLabel(s: PriceSource | null): string {
+  return s ? (lan[`quotationSource_${s}`] ?? s) : ''
+}
+
+/** One choice of the supplier list: source, supplier, price, and the purchase date of a last purchase. */
+export function offerLabel(s: SupplierPrice): string {
+  const when =
+    s.source === 'LAST_PURCHASE' && s.purchaseDate ? ` (${s.purchaseDate.slice(0, 10)})` : ''
+  return `${sourceLabel(s.source)} · ${s.supplierName || s.supplierCode} · ${price(s.price)}${
+    s.currency ? ' ' + s.currency : ''
+  }${when}`
+}
+
 export function checkColor(c: PriceCheck): string | undefined {
   if (c === 'OK') return 'success'
   if (c === 'HIGH' || c === 'LOW' || c === 'NO_PRICE') return 'error'
@@ -202,9 +244,23 @@ export function percent(v: number | null | undefined): string {
   return v == null ? '—' : `${qtyFmt.format(v)}%`
 }
 
-/** A blank request: cheapest suppliers, saved rates, margin by tier. */
+/** A blank request: last purchase / cheapest strategy prices, saved rates, margin by tier. */
 export function emptyRequest(): CalculateRequest {
-  return { selections: {}, fees: null, marginRate: null }
+  return { selections: {}, fees: null, marginRate: null, manualPrices: {} }
+}
+
+/**
+ * A typed-in unit price: null when the field is blank or 0 (no manual
+ * price), undefined when it is not a valid price (negative, not a number or
+ * more than 6 decimals).
+ */
+export function parseManualPrice(v: unknown): number | null | undefined {
+  if (v === null || v === undefined || String(v).trim() === '') return null
+  const s = String(v).trim()
+  if (!/^\d+(\.\d{1,6})?$/.test(s)) return undefined
+  const n = Number(s)
+  if (!Number.isFinite(n) || n >= 100000000) return undefined
+  return n === 0 ? null : n
 }
 
 /** Valid rate: a number from 0 to 100. */

@@ -17,6 +17,7 @@ const query = vi.hoisted(() => ({ orderNo: '26394-W53' }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }), useRoute: () => ({ query }) }))
 import ListPage from '@/views/virtulization/purchase/QuotationList.vue'
 import PlanPage from '@/views/virtulization/purchase/QuotationPlan.vue'
+import { lan } from '@/lang'
 import type { OrderSummary, QuotationPlan } from '@/features/quotation/model'
 
 const wrapperStub = defineComponent({ template: '<div><slot /></div>' })
@@ -82,6 +83,8 @@ function order(no: string, bomStatus: OrderSummary['bomStatus']): OrderSummary {
 
 function plan(): QuotationPlan {
   const supplier = (code: string, p: number) => ({
+    key: code,
+    source: 'STRATEGY' as const,
     supplierCode: code,
     supplierName: `${code} 公司`,
     price: p,
@@ -89,14 +92,31 @@ function plan(): QuotationPlan {
     currency: 'RMB',
     validFrom: null,
     validTo: null,
+    purchaseDate: null,
+    poNo: null,
   })
   return {
     order: order('26394-W53', 'BOTH'),
-    lines: [],
+    lines: [
+      {
+        lineId: 'L1',
+        productCode: 'P1',
+        productName: '灯',
+        spec: null,
+        qty: 100,
+        unit: 'PCS',
+        productBomCode: 'B1',
+        packagingBomCode: null,
+        materialCost: 300,
+        totalPrice: 420.56,
+        unitPrice: 4.2056,
+      },
+    ],
     productItems: [
       {
         kind: 'PRODUCT',
         bomCode: 'B1',
+        lineId: 'L1',
         productCode: 'P1',
         lineNo: 1,
         level: 1,
@@ -108,17 +128,60 @@ function plan(): QuotationPlan {
         qtyPerUnit: 2,
         orderQty: 100,
         totalQty: 200,
-        suppliers: [supplier('S1', 1.5), supplier('S2', 1.8)],
-        selectedSupplierCode: 'S1',
-        selectedSupplierName: 'S1 公司',
+        suppliers: [
+          {
+            ...supplier('S7', 1.7),
+            key: 'LAST_PURCHASE',
+            source: 'LAST_PURCHASE' as const,
+            purchaseDate: '2026-10-23',
+            poNo: 'P261023019',
+          },
+          supplier('S1', 1.5),
+          supplier('S2', 1.8),
+        ],
+        selectedKey: 'LAST_PURCHASE',
+        selectedSupplierCode: 'S7',
+        selectedSupplierName: 'S7 公司',
         unitPrice: 1.5,
         amount: 300,
         cheapestPrice: 1.5,
         basePrice: 1,
         priceCheck: 'HIGH',
+        priceSource: 'LAST_PURCHASE',
+        lastPurchaseDate: '2026-10-23',
+        lastPurchaseNo: 'P261023019',
       },
     ],
-    packagingItems: [],
+    packagingItems: [
+      {
+        kind: 'PACKAGING',
+        bomCode: 'K1',
+        lineId: 'L1',
+        productCode: 'P1',
+        lineNo: 1,
+        level: 1,
+        materialCode: 'X',
+        materialName: '彩盒',
+        spec: null,
+        unit: 'PCS',
+        materialClass: '302',
+        qtyPerUnit: 1,
+        orderQty: 100,
+        totalQty: 100,
+        suppliers: [],
+        selectedKey: null,
+        selectedSupplierCode: null,
+        selectedSupplierName: null,
+        unitPrice: null,
+        amount: 0,
+        cheapestPrice: null,
+        basePrice: null,
+        priceCheck: 'NO_PRICE',
+        priceSource: null,
+        lastPurchaseDate: null,
+        lastPurchaseNo: null,
+      },
+    ],
     productMaterialCost: 300,
     packagingMaterialCost: 0,
     materialCost: 300,
@@ -210,10 +273,16 @@ describe('Quotation plan page', () => {
       selections: {},
       fees: null,
       marginRate: null,
+      manualPrices: {},
     })
+    expect(page.find('[data-test="line-unit-L1"]').text()).toBe('4.2056')
     expect(page.find('[data-test="total"]').text()).toBe('420.56')
     expect(page.find('[data-test="warnings"]').text()).toContain('20%')
     expect(page.findAll('[data-test="fee-row"]')).toHaveLength(2)
+
+    const source = page.find('[data-test="source-A"]').text()
+    expect(source).toContain(lan.quotationSource_LAST_PURCHASE)
+    expect(source).toContain('2026-10-23')
 
     await page.find('[data-test="supplier-A"]').setValue('S2')
     await flushPromises()
@@ -241,6 +310,25 @@ describe('Quotation plan page', () => {
       expect.objectContaining({ selections: { A: 'S2' } }),
     )
     expect(page.find('[data-test="notice"]').text()).toContain('报价方案_26394-W53.xlsx')
+  })
+
+  it('sends a typed-in price for a material without a price, and refuses a bad one', async () => {
+    api.plan.mockResolvedValue(plan())
+    const page = mount(PlanPage, { global: { stubs } })
+    await flushPromises()
+    const field = page.find('[data-test="manual-X"]')
+    await field.setValue('-1')
+    await field.trigger('blur')
+    expect(page.find('[data-test="error"]').text()).toContain(lan.quotationManualPriceInvalid)
+    expect(api.plan).toHaveBeenCalledTimes(1)
+
+    await field.setValue('0.85')
+    await field.trigger('keyup.enter')
+    await flushPromises()
+    expect(api.plan).toHaveBeenLastCalledWith(
+      '26394-W53',
+      expect.objectContaining({ manualPrices: { X: 0.85 } }),
+    )
   })
 
   it('refuses an invalid rate before calling the server', async () => {

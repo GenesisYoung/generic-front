@@ -3,7 +3,10 @@
  * Quotation plan of one order (route /purchase/quotations/plan?orderNo=...).
  *
  * The backend prices every bought part of the order's product BOM and
- * packaging BOM with the cheapest valid purchase strategy (采购策略) price,
+ * packaging BOM at its most recent purchase price (supplier and price of the
+ * last purchase order line); a part that was never bought gets the cheapest
+ * valid purchase strategy (采购策略) price. Each line shows which source it
+ * uses and, for a last purchase price, the purchase date. It
  * keeps product and packaging material costs apart, adds the fees and the
  * profit margin tier, and returns the totals. Here the purchaser can choose
  * another supplier for a material, change a fee rate or set the margin by
@@ -23,9 +26,12 @@ import {
   emptyRequest,
   feeLabel,
   money,
+  offerLabel,
+  parseManualPrice,
   percent,
   price,
   qty,
+  sourceLabel,
   validRate,
   type CalculateRequest,
   type QuotationItem,
@@ -75,10 +81,7 @@ function message(e: unknown): string {
 }
 
 function supplierChoices(i: QuotationItem) {
-  return i.suppliers.map((s) => ({
-    title: `${s.supplierName || s.supplierCode} · ${price(s.price)}${s.currency ? ' ' + s.currency : ''}`,
-    value: s.supplierCode,
-  }))
+  return i.suppliers.map((s) => ({ title: offerLabel(s), value: s.key }))
 }
 
 async function calculate() {
@@ -100,10 +103,28 @@ async function calculate() {
   }
 }
 
-function choose(i: QuotationItem, supplierCode: string) {
+/** What the purchaser is typing in the manual price fields, by material code. */
+const manualDraft = ref<Record<string, string | number>>({})
+
+function applyManual(i: QuotationItem) {
+  const v = parseManualPrice(manualDraft.value[i.materialCode])
+  if (v === undefined) {
+    error.value = lan.quotationManualPriceInvalid ?? ''
+    return
+  }
+  const current = request.value.manualPrices[i.materialCode] ?? null
+  if (v === current) return
+  const manualPrices = { ...request.value.manualPrices }
+  if (v === null) delete manualPrices[i.materialCode]
+  else manualPrices[i.materialCode] = v
+  request.value = { ...request.value, manualPrices }
+  void calculate()
+}
+
+function choose(i: QuotationItem, key: string) {
   request.value = {
     ...request.value,
-    selections: { ...request.value.selections, [i.materialCode]: supplierCode },
+    selections: { ...request.value.selections, [i.materialCode]: key },
   }
   void calculate()
 }
@@ -229,6 +250,9 @@ onMounted(calculate)
             <th class="text-end">{{ lan.quotationColQty }}</th>
             <th>{{ lan.quotationColProductBom }}</th>
             <th>{{ lan.quotationColPackagingBom }}</th>
+            <th class="text-end">{{ lan.quotationColLineMaterialCost }}</th>
+            <th class="text-end">{{ lan.quotationColLineTotal }}</th>
+            <th class="text-end">{{ lan.quotationColLineUnitPrice }}</th>
           </tr>
         </thead>
         <tbody>
@@ -241,6 +265,11 @@ onMounted(calculate)
             <td class="text-end">{{ qty(l.qty) }} {{ l.unit || '' }}</td>
             <td>{{ l.productBomCode || '—' }}</td>
             <td>{{ l.packagingBomCode || '—' }}</td>
+            <td class="text-end">{{ money(l.materialCost) }}</td>
+            <td class="text-end">{{ money(l.totalPrice) }}</td>
+            <td class="text-end font-weight-medium" :data-test="`line-unit-${l.lineId}`">
+              {{ price(l.unitPrice) }}
+            </td>
           </tr>
         </tbody>
       </v-table>
@@ -275,7 +304,7 @@ onMounted(calculate)
               <td>
                 <v-select
                   v-if="i.suppliers.length > 1"
-                  :model-value="i.selectedSupplierCode"
+                  :model-value="i.selectedKey"
                   :items="supplierChoices(i)"
                   density="compact"
                   hide-details
@@ -285,12 +314,43 @@ onMounted(calculate)
                 <span v-else-if="i.suppliers.length === 1">
                   {{ i.selectedSupplierName || i.selectedSupplierCode }}
                 </span>
-                <span v-else class="text-error">{{ lan.quotationNoSupplier }}</span>
+                <template v-else>
+                  <div class="text-error text-caption">{{ lan.quotationNoSupplier }}</div>
+                  <v-text-field
+                    v-model="manualDraft[i.materialCode]"
+                    type="number"
+                    min="0"
+                    step="any"
+                    density="compact"
+                    hide-details
+                    :placeholder="lan.quotationManualPricePlaceholder"
+                    :data-test="`manual-${i.materialCode}`"
+                    @blur="applyManual(i)"
+                    @keyup.enter="applyManual(i)"
+                  />
+                </template>
                 <div v-if="i.suppliers.length > 1" class="text-caption text-medium-emphasis">
                   {{ fmt(lan.quotationSupplierCount, i.suppliers.length, price(i.cheapestPrice)) }}
                 </div>
               </td>
-              <td class="text-end">{{ price(i.unitPrice) }}</td>
+              <td class="text-end">
+                {{ price(i.unitPrice) }}
+                <div v-if="i.priceSource" :data-test="`source-${i.materialCode}`">
+                  <v-chip
+                    size="x-small"
+                    variant="tonal"
+                    :color="i.priceSource === 'LAST_PURCHASE' ? 'primary' : undefined"
+                  >
+                    {{ sourceLabel(i.priceSource) }}
+                  </v-chip>
+                  <div
+                    v-if="i.priceSource === 'LAST_PURCHASE' && i.lastPurchaseDate"
+                    class="text-caption text-medium-emphasis"
+                  >
+                    {{ fmt(lan.quotationLastPurchaseOn, i.lastPurchaseDate.slice(0, 10)) }}
+                  </div>
+                </div>
+              </td>
               <td class="text-end">{{ money(i.amount) }}</td>
               <td class="text-end">{{ price(i.basePrice) }}</td>
               <td>

@@ -8,7 +8,10 @@ import {
   fileNameFrom,
   money,
   normalizeSettings,
+  offerLabel,
+  parseManualPrice,
   percent,
+  sourceLabel,
   validateSettings,
   type QuotationSettings,
 } from '../model'
@@ -85,5 +88,45 @@ describe('quotation model', () => {
     ).toBe('报价_26394-W53.xlsx')
     expect(fileNameFrom('attachment; filename="a.xlsx"', 'x.xlsx')).toBe('a.xlsx')
     expect(fileNameFrom(undefined, 'x.xlsx')).toBe('x.xlsx')
+  })
+})
+
+describe('price source labels', () => {
+  it('names the source and, for a last purchase, the date', () => {
+    const base = {
+      supplierCode: 'S7',
+      supplierName: 'S7 公司',
+      price: 1.7,
+      taxRate: 13,
+      currency: 'RMB',
+      validFrom: null,
+      validTo: null,
+      poNo: null,
+    }
+    const last = offerLabel({
+      ...base,
+      key: 'LAST_PURCHASE',
+      source: 'LAST_PURCHASE',
+      purchaseDate: '2026-10-23',
+    })
+    expect(last).toContain(sourceLabel('LAST_PURCHASE'))
+    expect(last).toContain('(2026-10-23)')
+    const strategy = offerLabel({ ...base, key: 'S7', source: 'STRATEGY', purchaseDate: null })
+    expect(strategy).toContain(sourceLabel('STRATEGY'))
+    expect(strategy).not.toContain('(')
+    expect(sourceLabel(null)).toBe('')
+  })
+})
+
+describe('parseManualPrice', () => {
+  it('reads a price, treats blank and 0 as none and refuses bad input', () => {
+    expect(parseManualPrice('0.85')).toBe(0.85)
+    expect(parseManualPrice(12)).toBe(12)
+    expect(parseManualPrice('')).toBeNull()
+    expect(parseManualPrice('0')).toBeNull()
+    expect(parseManualPrice(undefined)).toBeNull()
+    expect(parseManualPrice('-1')).toBeUndefined()
+    expect(parseManualPrice('1.1234567')).toBeUndefined()
+    expect(parseManualPrice('abc')).toBeUndefined()
   })
 })
