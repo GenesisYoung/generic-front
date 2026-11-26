@@ -90,6 +90,28 @@ const virtualization: Route[] = [
     },
   },
   {
+    path: '/purchase/quotations',
+    name: 'quotations',
+    component: () => import('@/views/virtulization/purchase/QuotationList.vue'),
+    meta: {
+      title: 'quotations',
+      icon: 'mdi-calculator-variant-outline',
+      requireAuth: true,
+      permission: ['menu.quotation.read'],
+    },
+  },
+  {
+    path: '/purchase/quotations/plan',
+    name: 'quotationPlan',
+    component: () => import('@/views/virtulization/purchase/QuotationPlan.vue'),
+    meta: {
+      title: 'quotationPlan',
+      icon: 'mdi-calculator-variant-outline',
+      requireAuth: true,
+      permission: ['menu.quotation.read'],
+    },
+  },
+  {
     path: '/purchase/exceptions',
     name: 'purchaseExceptions',
     component: () => import('@/views/virtulization/purchase/PurchaseExceptions.vue'),
