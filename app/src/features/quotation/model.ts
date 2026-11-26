@@ -152,8 +152,9 @@ export function bomStatusColor(s: BomStatus): string | undefined {
 
 /** "Nothing bought" or "1 of 4 plan lines bought". */
 export function boughtLabel(o: Pick<OrderSummary, 'planLines' | 'planLinesBought'>): string {
-  if (!o.planLines) return '—'
+  if (!o.planLines) return lan.quotationBoughtNoPlan ?? '—'
   if (!o.planLinesBought) return lan.quotationBoughtNone ?? ''
+  if (o.planLinesBought >= o.planLines) return lan.quotationBoughtAll ?? ''
   return fmt(lan.quotationBoughtPart, o.planLinesBought, o.planLines)
 }
 

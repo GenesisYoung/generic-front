@@ -535,7 +535,7 @@ const mapping: Record<string, string> = {
   quotations: 'Purchase quotations',
   quotationPlan: 'Quotation plan',
   quotationHint:
-    'Orders with a purchase plan whose materials are not bought yet. Product and packaging BOMs are priced separately, then fees and profit are added.',
+    'All open sales orders of the last 90 days, with or without a purchase plan. Product and packaging BOMs are priced separately, then fees and profit are added.',
   quotationRates: 'Quotation rates',
   quotationRatesHint:
     'Every quotation starts with these rates; on a quotation you can change them for that quotation only.',
@@ -555,9 +555,11 @@ const mapping: Record<string, string> = {
   quotationColBom: 'BOM',
   quotationColBought: 'Bought',
   quotationBoughtNone: 'Nothing bought',
+  quotationBoughtNoPlan: 'No purchase plan',
+  quotationBoughtAll: 'All bought',
   quotationBoughtPart: '{0} of {1} plan lines bought',
   quotationQuote: 'Quote',
-  quotationEmpty: 'No orders waiting for a quotation',
+  quotationEmpty: 'No open sales orders',
   quotationBom_BOTH: 'Product + packaging BOM',
   quotationBom_PRODUCT_ONLY: 'Product BOM only',
   quotationBom_PACKAGING_ONLY: 'Packaging BOM only',
