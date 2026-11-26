@@ -56,10 +56,15 @@ export interface OrderLine {
   unit: string | null
   productBomCode: string | null
   packagingBomCode: string | null
+  /** Priced BOM lines of this order line; null without any. */
+  materialCost: number | null
+  /** This line's share of the quotation total, and per unit; null without priced material. */
+  totalPrice: number | null
+  unitPrice: number | null
 }
 
 /** Where a price comes from: the material's most recent purchase order line, or the purchase strategy (采购策略). */
-export type PriceSource = 'LAST_PURCHASE' | 'STRATEGY'
+export type PriceSource = 'LAST_PURCHASE' | 'STRATEGY' | 'MANUAL'
 
 /** The selection key of the last purchase price (a strategy price is chosen by its supplier code). */
 export const LAST_PURCHASE_KEY = 'LAST_PURCHASE'
@@ -83,6 +88,8 @@ export interface SupplierPrice {
 export interface QuotationItem {
   kind: ItemKind
   bomCode: string | null
+  /** Order line (ORDCORD2.ERI) the BOM line belongs to. */
+  lineId: string | null
   productCode: string | null
   lineNo: number | null
   level: number | null
@@ -148,6 +155,8 @@ export interface CalculateRequest {
   selections: Record<string, string>
   fees: Fee[] | null
   marginRate: number | null
+  /** Material code -> unit price excl. tax typed in for a material without any price. */
+  manualPrices: Record<string, number>
 }
 
 export const FEE_CODES = [
@@ -235,9 +244,23 @@ export function percent(v: number | null | undefined): string {
   return v == null ? '—' : `${qtyFmt.format(v)}%`
 }
 
-/** A blank request: cheapest suppliers, saved rates, margin by tier. */
+/** A blank request: last purchase / cheapest strategy prices, saved rates, margin by tier. */
 export function emptyRequest(): CalculateRequest {
-  return { selections: {}, fees: null, marginRate: null }
+  return { selections: {}, fees: null, marginRate: null, manualPrices: {} }
+}
+
+/**
+ * A typed-in unit price: null when the field is blank or 0 (no manual
+ * price), undefined when it is not a valid price (negative, not a number or
+ * more than 6 decimals).
+ */
+export function parseManualPrice(v: unknown): number | null | undefined {
+  if (v === null || v === undefined || String(v).trim() === '') return null
+  const s = String(v).trim()
+  if (!/^\d+(\.\d{1,6})?$/.test(s)) return undefined
+  const n = Number(s)
+  if (!Number.isFinite(n) || n >= 100000000) return undefined
+  return n === 0 ? null : n
 }
 
 /** Valid rate: a number from 0 to 100. */

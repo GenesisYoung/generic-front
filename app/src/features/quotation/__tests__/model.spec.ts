@@ -9,6 +9,7 @@ import {
   money,
   normalizeSettings,
   offerLabel,
+  parseManualPrice,
   percent,
   sourceLabel,
   validateSettings,
@@ -114,5 +115,18 @@ describe('price source labels', () => {
     expect(strategy).toContain(sourceLabel('STRATEGY'))
     expect(strategy).not.toContain('(')
     expect(sourceLabel(null)).toBe('')
+  })
+})
+
+describe('parseManualPrice', () => {
+  it('reads a price, treats blank and 0 as none and refuses bad input', () => {
+    expect(parseManualPrice('0.85')).toBe(0.85)
+    expect(parseManualPrice(12)).toBe(12)
+    expect(parseManualPrice('')).toBeNull()
+    expect(parseManualPrice('0')).toBeNull()
+    expect(parseManualPrice(undefined)).toBeNull()
+    expect(parseManualPrice('-1')).toBeUndefined()
+    expect(parseManualPrice('1.1234567')).toBeUndefined()
+    expect(parseManualPrice('abc')).toBeUndefined()
   })
 })
