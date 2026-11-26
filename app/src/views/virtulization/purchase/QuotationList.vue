@@ -19,6 +19,7 @@ import {
   baseLabel,
   bomStatusColor,
   bomStatusLabel,
+  boughtLabel,
   feeLabel,
   qty,
   validateSettings,
@@ -194,6 +195,7 @@ onMounted(() => load())
           <th class="text-end">{{ lan.quotationColLines }}</th>
           <th class="text-end">{{ lan.quotationColQty }}</th>
           <th>{{ lan.quotationColBom }}</th>
+          <th>{{ lan.quotationColBought }}</th>
           <th></th>
         </tr>
       </thead>
@@ -218,6 +220,15 @@ onMounted(() => load())
               {{ bomStatusLabel(o.bomStatus) }}
             </v-chip>
           </td>
+          <td data-test="bought">
+            <v-chip
+              size="small"
+              variant="tonal"
+              :color="o.planLinesBought ? 'warning' : 'success'"
+            >
+              {{ boughtLabel(o) }}
+            </v-chip>
+          </td>
           <td class="text-end">
             <v-btn
               size="small"
@@ -232,7 +243,7 @@ onMounted(() => load())
           </td>
         </tr>
         <tr v-if="loaded && !loading && shown.length === 0">
-          <td colspan="8" class="text-center text-medium-emphasis py-6" data-test="empty">
+          <td colspan="9" class="text-center text-medium-emphasis py-6" data-test="empty">
             {{ lan.quotationEmpty }}
           </td>
         </tr>

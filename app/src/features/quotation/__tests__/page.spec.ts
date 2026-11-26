@@ -75,6 +75,8 @@ function order(no: string, bomStatus: OrderSummary['bomStatus']): OrderSummary {
     hasProductBom: bomStatus !== 'NONE',
     hasPackagingBom: bomStatus === 'BOTH',
     bomStatus,
+    planLines: 4,
+    planLinesBought: no.endsWith('2') ? 1 : 0,
   }
 }
 

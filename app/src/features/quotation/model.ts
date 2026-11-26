@@ -2,7 +2,7 @@
  * Purchase quotation (报价方案) shapes and pure helpers. All rates are
  * percentages (2.5 = 2.5%), as the backend sends them.
  */
-import { lan } from '@/lang'
+import { fmt, lan } from '@/lang'
 
 export type BomStatus = 'BOTH' | 'PRODUCT_ONLY' | 'PACKAGING_ONLY' | 'NONE'
 export type BomFilter = 'ALL' | 'WITH' | 'WITHOUT'
@@ -42,6 +42,9 @@ export interface OrderSummary {
   hasProductBom: boolean
   hasPackagingBom: boolean
   bomStatus: BomStatus
+  /** Lines of the purchase plan, and how many of them already have a purchase order. */
+  planLines: number
+  planLinesBought: number
 }
 
 export interface OrderLine {
@@ -145,6 +148,13 @@ export function bomStatusColor(s: BomStatus): string | undefined {
   if (s === 'BOTH') return 'success'
   if (s === 'NONE') return 'error'
   return 'warning'
+}
+
+/** "Nothing bought" or "1 of 4 plan lines bought". */
+export function boughtLabel(o: Pick<OrderSummary, 'planLines' | 'planLinesBought'>): string {
+  if (!o.planLines) return '—'
+  if (!o.planLinesBought) return lan.quotationBoughtNone ?? ''
+  return fmt(lan.quotationBoughtPart, o.planLinesBought, o.planLines)
 }
 
 export function feeLabel(code: string): string {

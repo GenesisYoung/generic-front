@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   bomStatusLabel,
+  boughtLabel,
   checkColor,
   feeLabel,
   fileNameFrom,
@@ -28,6 +29,9 @@ function settings(extra: Partial<QuotationSettings> = {}): QuotationSettings {
 describe('quotation model', () => {
   it('labels and formats', () => {
     expect(bomStatusLabel('NONE')).toBe('无BOM')
+    expect(boughtLabel({ planLines: 4, planLinesBought: 0 })).toBe('未采购')
+    expect(boughtLabel({ planLines: 4, planLinesBought: 1 })).toBe('已采购 1/4 行')
+    expect(boughtLabel({ planLines: 0, planLinesBought: 0 })).toBe('—')
     expect(feeLabel('MANAGEMENT')).toBe('管理费')
     expect(checkColor('HIGH')).toBe('error')
     expect(checkColor('NO_BASE')).toBeUndefined()
