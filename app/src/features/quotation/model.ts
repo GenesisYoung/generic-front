@@ -61,7 +61,31 @@ export interface OrderLine {
   /** This line's share of the quotation total, and per unit; null without priced material. */
   totalPrice: number | null
   unitPrice: number | null
+  /** BOM cost of ONE finished product (sum of the unit total prices); null without priced material. */
+  bomUnitCost: number | null
 }
+
+/** The calculation for one finished product of an order line; every base amount is per unit. */
+export interface UnitCalc {
+  lineId: string | null
+  productCode: string | null
+  productName: string | null
+  qty: number | null
+  productUnitCost: number
+  packagingUnitCost: number
+  bomUnitCost: number
+  fees: FeeAmount[]
+  costBeforeProfit: number
+  marginRate: number
+  marginTierMin: number | null
+  marginOverridden: boolean
+  profit: number
+  unitPrice: number
+  totalPrice: number
+}
+
+/** A bought part, or the outsourced processing fee (委外加工费) of a part processed for us. */
+export type ItemType = 'MATERIAL' | 'PROCESSING'
 
 /** Where a price comes from: the material's most recent purchase order line, or the purchase strategy (采购策略). */
 export type PriceSource = 'LAST_PURCHASE' | 'STRATEGY' | 'MANUAL'
@@ -116,6 +140,9 @@ export interface QuotationItem {
   /** Set when priceSource is LAST_PURCHASE. */
   lastPurchaseDate: string | null
   lastPurchaseNo: string | null
+  itemType: ItemType
+  /** unitPrice x qtyPerUnit: the cost of this line in ONE finished product. */
+  unitTotalPrice: number | null
 }
 
 export interface FeeAmount {
@@ -147,6 +174,8 @@ export interface QuotationPlan {
   priceWarningCount: number
   warnings: string[]
   generatedAt: string | null
+  /** Per finished product of each order line: fees, margin and price on a per-unit base. */
+  units: UnitCalc[]
 }
 
 /** What the purchaser changed on the plan page; sent with every recalculation and export. */
