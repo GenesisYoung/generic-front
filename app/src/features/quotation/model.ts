@@ -58,7 +58,16 @@ export interface OrderLine {
   packagingBomCode: string | null
 }
 
+/** Where a price comes from: the material's most recent purchase order line, or the purchase strategy (采购策略). */
+export type PriceSource = 'LAST_PURCHASE' | 'STRATEGY'
+
+/** The selection key of the last purchase price (a strategy price is chosen by its supplier code). */
+export const LAST_PURCHASE_KEY = 'LAST_PURCHASE'
+
 export interface SupplierPrice {
+  /** What CalculateRequest.selections names to choose this price. */
+  key: string
+  source: PriceSource
   supplierCode: string
   supplierName: string | null
   price: number
@@ -66,6 +75,9 @@ export interface SupplierPrice {
   currency: string | null
   validFrom: string | null
   validTo: string | null
+  /** Set for LAST_PURCHASE. */
+  purchaseDate: string | null
+  poNo: string | null
 }
 
 export interface QuotationItem {
@@ -82,7 +94,9 @@ export interface QuotationItem {
   qtyPerUnit: number
   orderQty: number | null
   totalQty: number
+  /** Last purchase price first (when bought before), then strategy prices, cheapest first. */
   suppliers: SupplierPrice[]
+  selectedKey: string | null
   selectedSupplierCode: string | null
   selectedSupplierName: string | null
   unitPrice: number | null
@@ -90,6 +104,11 @@ export interface QuotationItem {
   cheapestPrice: number | null
   basePrice: number | null
   priceCheck: PriceCheck
+  /** Source of the price used; null without any price. */
+  priceSource: PriceSource | null
+  /** Set when priceSource is LAST_PURCHASE. */
+  lastPurchaseDate: string | null
+  lastPurchaseNo: string | null
 }
 
 export interface FeeAmount {
@@ -125,6 +144,7 @@ export interface QuotationPlan {
 
 /** What the purchaser changed on the plan page; sent with every recalculation and export. */
 export interface CalculateRequest {
+  /** Material code -> SupplierPrice.key (LAST_PURCHASE or a strategy supplier code). */
   selections: Record<string, string>
   fees: Fee[] | null
   marginRate: number | null
@@ -168,6 +188,19 @@ export function baseLabel(base: string): string {
 
 export function checkLabel(c: PriceCheck): string {
   return lan[`quotationCheck_${c}`] ?? c
+}
+
+export function sourceLabel(s: PriceSource | null): string {
+  return s ? (lan[`quotationSource_${s}`] ?? s) : ''
+}
+
+/** One choice of the supplier list: source, supplier, price, and the purchase date of a last purchase. */
+export function offerLabel(s: SupplierPrice): string {
+  const when =
+    s.source === 'LAST_PURCHASE' && s.purchaseDate ? ` (${s.purchaseDate.slice(0, 10)})` : ''
+  return `${sourceLabel(s.source)} · ${s.supplierName || s.supplierCode} · ${price(s.price)}${
+    s.currency ? ' ' + s.currency : ''
+  }${when}`
 }
 
 export function checkColor(c: PriceCheck): string | undefined {

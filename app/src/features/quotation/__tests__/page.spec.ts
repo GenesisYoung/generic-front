@@ -17,6 +17,7 @@ const query = vi.hoisted(() => ({ orderNo: '26394-W53' }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }), useRoute: () => ({ query }) }))
 import ListPage from '@/views/virtulization/purchase/QuotationList.vue'
 import PlanPage from '@/views/virtulization/purchase/QuotationPlan.vue'
+import { lan } from '@/lang'
 import type { OrderSummary, QuotationPlan } from '@/features/quotation/model'
 
 const wrapperStub = defineComponent({ template: '<div><slot /></div>' })
@@ -82,6 +83,8 @@ function order(no: string, bomStatus: OrderSummary['bomStatus']): OrderSummary {
 
 function plan(): QuotationPlan {
   const supplier = (code: string, p: number) => ({
+    key: code,
+    source: 'STRATEGY' as const,
     supplierCode: code,
     supplierName: `${code} 公司`,
     price: p,
@@ -89,6 +92,8 @@ function plan(): QuotationPlan {
     currency: 'RMB',
     validFrom: null,
     validTo: null,
+    purchaseDate: null,
+    poNo: null,
   })
   return {
     order: order('26394-W53', 'BOTH'),
@@ -108,14 +113,28 @@ function plan(): QuotationPlan {
         qtyPerUnit: 2,
         orderQty: 100,
         totalQty: 200,
-        suppliers: [supplier('S1', 1.5), supplier('S2', 1.8)],
-        selectedSupplierCode: 'S1',
-        selectedSupplierName: 'S1 公司',
+        suppliers: [
+          {
+            ...supplier('S7', 1.7),
+            key: 'LAST_PURCHASE',
+            source: 'LAST_PURCHASE' as const,
+            purchaseDate: '2026-10-23',
+            poNo: 'P261023019',
+          },
+          supplier('S1', 1.5),
+          supplier('S2', 1.8),
+        ],
+        selectedKey: 'LAST_PURCHASE',
+        selectedSupplierCode: 'S7',
+        selectedSupplierName: 'S7 公司',
         unitPrice: 1.5,
         amount: 300,
         cheapestPrice: 1.5,
         basePrice: 1,
         priceCheck: 'HIGH',
+        priceSource: 'LAST_PURCHASE',
+        lastPurchaseDate: '2026-10-23',
+        lastPurchaseNo: 'P261023019',
       },
     ],
     packagingItems: [],
@@ -214,6 +233,10 @@ describe('Quotation plan page', () => {
     expect(page.find('[data-test="total"]').text()).toBe('420.56')
     expect(page.find('[data-test="warnings"]').text()).toContain('20%')
     expect(page.findAll('[data-test="fee-row"]')).toHaveLength(2)
+
+    const source = page.find('[data-test="source-A"]').text()
+    expect(source).toContain(lan.quotationSource_LAST_PURCHASE)
+    expect(source).toContain('2026-10-23')
 
     await page.find('[data-test="supplier-A"]').setValue('S2')
     await flushPromises()

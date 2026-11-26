@@ -3,7 +3,10 @@
  * Quotation plan of one order (route /purchase/quotations/plan?orderNo=...).
  *
  * The backend prices every bought part of the order's product BOM and
- * packaging BOM with the cheapest valid purchase strategy (采购策略) price,
+ * packaging BOM at its most recent purchase price (supplier and price of the
+ * last purchase order line); a part that was never bought gets the cheapest
+ * valid purchase strategy (采购策略) price. Each line shows which source it
+ * uses and, for a last purchase price, the purchase date. It
  * keeps product and packaging material costs apart, adds the fees and the
  * profit margin tier, and returns the totals. Here the purchaser can choose
  * another supplier for a material, change a fee rate or set the margin by
@@ -23,9 +26,11 @@ import {
   emptyRequest,
   feeLabel,
   money,
+  offerLabel,
   percent,
   price,
   qty,
+  sourceLabel,
   validRate,
   type CalculateRequest,
   type QuotationItem,
@@ -75,10 +80,7 @@ function message(e: unknown): string {
 }
 
 function supplierChoices(i: QuotationItem) {
-  return i.suppliers.map((s) => ({
-    title: `${s.supplierName || s.supplierCode} · ${price(s.price)}${s.currency ? ' ' + s.currency : ''}`,
-    value: s.supplierCode,
-  }))
+  return i.suppliers.map((s) => ({ title: offerLabel(s), value: s.key }))
 }
 
 async function calculate() {
@@ -100,10 +102,10 @@ async function calculate() {
   }
 }
 
-function choose(i: QuotationItem, supplierCode: string) {
+function choose(i: QuotationItem, key: string) {
   request.value = {
     ...request.value,
-    selections: { ...request.value.selections, [i.materialCode]: supplierCode },
+    selections: { ...request.value.selections, [i.materialCode]: key },
   }
   void calculate()
 }
@@ -275,7 +277,7 @@ onMounted(calculate)
               <td>
                 <v-select
                   v-if="i.suppliers.length > 1"
-                  :model-value="i.selectedSupplierCode"
+                  :model-value="i.selectedKey"
                   :items="supplierChoices(i)"
                   density="compact"
                   hide-details
@@ -290,7 +292,24 @@ onMounted(calculate)
                   {{ fmt(lan.quotationSupplierCount, i.suppliers.length, price(i.cheapestPrice)) }}
                 </div>
               </td>
-              <td class="text-end">{{ price(i.unitPrice) }}</td>
+              <td class="text-end">
+                {{ price(i.unitPrice) }}
+                <div v-if="i.priceSource" :data-test="`source-${i.materialCode}`">
+                  <v-chip
+                    size="x-small"
+                    variant="tonal"
+                    :color="i.priceSource === 'LAST_PURCHASE' ? 'primary' : undefined"
+                  >
+                    {{ sourceLabel(i.priceSource) }}
+                  </v-chip>
+                  <div
+                    v-if="i.priceSource === 'LAST_PURCHASE' && i.lastPurchaseDate"
+                    class="text-caption text-medium-emphasis"
+                  >
+                    {{ fmt(lan.quotationLastPurchaseOn, i.lastPurchaseDate.slice(0, 10)) }}
+                  </div>
+                </div>
+              </td>
               <td class="text-end">{{ money(i.amount) }}</td>
               <td class="text-end">{{ price(i.basePrice) }}</td>
               <td>
