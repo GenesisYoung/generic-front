@@ -614,7 +614,7 @@ const mapping: Record<string, string> = {
   quotationColLineMaterialCost: '物料成本',
   quotationColLineTotal: '报价合计',
   quotationColLineUnitPrice: '单价',
-  quotationManualPricePlaceholder: '手工填写单价（不含税）',
+  quotationManualPricePlaceholder: '手工填写单价（含税）',
   quotationManualPriceInvalid: '单价必须大于等于 0，最多 6 位小数',
   quotationLastPurchaseOn: '采购于 {0}',
   quotationNoItems: '无',

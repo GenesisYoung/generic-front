@@ -155,7 +155,7 @@ export interface CalculateRequest {
   selections: Record<string, string>
   fees: Fee[] | null
   marginRate: number | null
-  /** Material code -> unit price excl. tax typed in for a material without any price. */
+  /** Material code -> unit price INCLUDING tax typed in for a material without any price. */
   manualPrices: Record<string, number>
 }
 

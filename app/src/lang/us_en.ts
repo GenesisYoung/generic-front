@@ -625,7 +625,7 @@ const mapping: Record<string, string> = {
   quotationColLineMaterialCost: 'Material cost',
   quotationColLineTotal: 'Quotation total',
   quotationColLineUnitPrice: 'Unit price',
-  quotationManualPricePlaceholder: 'Enter unit price (excl. tax)',
+  quotationManualPricePlaceholder: 'Enter unit price (incl. tax)',
   quotationManualPriceInvalid: 'A unit price must be 0 or more, with at most 6 decimals',
   quotationLastPurchaseOn: 'Bought {0}',
   quotationNoItems: 'None',
