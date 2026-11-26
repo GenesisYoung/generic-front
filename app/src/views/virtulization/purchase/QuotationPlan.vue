@@ -73,8 +73,36 @@ const sections = computed(() =>
       ]
     : [],
 )
-const feesBeforeProfit = computed(() => plan.value?.fees.filter((f) => f.base !== 'PRICE') ?? [])
-const feesAfterProfit = computed(() => plan.value?.fees.filter((f) => f.base === 'PRICE') ?? [])
+/** Which product's per-unit calculation is shown (order line id). */
+const unitLine = ref<string | null>(null)
+const unit = computed(() => {
+  const units = plan.value?.units ?? []
+  return units.find((u) => u.lineId === unitLine.value) ?? units[0] ?? null
+})
+const unitChoices = computed(() =>
+  (plan.value?.units ?? []).map((u) => ({
+    title: `${u.productCode ?? ''} ${u.productName ?? ''} × ${qty(u.qty)}`.trim(),
+    value: u.lineId,
+  })),
+)
+const unitFees = computed(() => unit.value?.fees ?? plan.value?.fees ?? [])
+const feesBeforeProfit = computed(() => unitFees.value.filter((f) => f.base !== 'PRICE'))
+const feesAfterProfit = computed(() => unitFees.value.filter((f) => f.base === 'PRICE'))
+
+/** BOM cost of one finished product, per order line, for one material section. */
+function componentCosts(items: QuotationItem[]) {
+  const lines = plan.value?.lines ?? []
+  return lines
+    .map((l) => {
+      const mine = items.filter((i) => i.lineId === l.lineId && i.unitTotalPrice != null)
+      return {
+        lineId: l.lineId,
+        productCode: l.productCode,
+        cost: mine.length ? mine.reduce((sum, i) => sum + (i.unitTotalPrice ?? 0), 0) : null,
+      }
+    })
+    .filter((c) => c.cost != null)
+}
 
 function message(e: unknown): string {
   return e instanceof Error && e.message ? e.message : (lan.requestFailed ?? '')
@@ -284,6 +312,7 @@ onMounted(calculate)
               <th class="text-end">{{ lan.quotationColTotalQty }}</th>
               <th style="min-width: 240px">{{ lan.quotationColSupplier }}</th>
               <th class="text-end">{{ lan.quotationColUnitPrice }}</th>
+              <th class="text-end">{{ lan.quotationColUnitTotalPrice }}</th>
               <th class="text-end">{{ lan.quotationColAmount }}</th>
               <th class="text-end">{{ lan.quotationColBasePrice }}</th>
               <th>{{ lan.quotationColCheck }}</th>
@@ -297,6 +326,15 @@ onMounted(calculate)
             >
               <td>
                 {{ i.materialCode }} {{ i.materialName || '' }}
+                <v-chip
+                  v-if="i.itemType === 'PROCESSING'"
+                  size="x-small"
+                  variant="tonal"
+                  color="warning"
+                  :data-test="`processing-${i.materialCode}`"
+                >
+                  {{ lan.quotationProcessingFee }}
+                </v-chip>
                 <div class="text-caption text-medium-emphasis">{{ i.spec || '' }}</div>
               </td>
               <td class="text-end">{{ qty(i.qtyPerUnit) }} {{ i.unit || '' }}</td>
@@ -351,6 +389,9 @@ onMounted(calculate)
                   </div>
                 </div>
               </td>
+              <td class="text-end" :data-test="`unit-total-${i.materialCode}`">
+                {{ price(i.unitTotalPrice) }}
+              </td>
               <td class="text-end">{{ money(i.amount) }}</td>
               <td class="text-end">{{ price(i.basePrice) }}</td>
               <td>
@@ -360,12 +401,21 @@ onMounted(calculate)
               </td>
             </tr>
             <tr v-if="s.items.length === 0">
-              <td colspan="8" class="text-center text-medium-emphasis py-3">
+              <td colspan="9" class="text-center text-medium-emphasis py-3">
                 {{ lan.quotationNoItems }}
               </td>
             </tr>
+            <tr v-for="c in componentCosts(s.items)" :key="`component-${c.lineId}`">
+              <td colspan="5" class="text-end font-weight-medium">
+                {{ fmt(lan.quotationComponentUnitCost, c.productCode ?? '') }}
+              </td>
+              <td class="text-end font-weight-medium" :data-test="`component-${s.key}-${c.lineId}`">
+                {{ price(c.cost) }}
+              </td>
+              <td colspan="3"></td>
+            </tr>
             <tr>
-              <td colspan="5" class="text-end font-weight-medium">{{ s.subtotalLabel }}</td>
+              <td colspan="6" class="text-end font-weight-medium">{{ s.subtotalLabel }}</td>
               <td class="text-end font-weight-medium" :data-test="`subtotal-${s.key}`">
                 {{ money(s.subtotal) }}
               </td>
@@ -377,8 +427,19 @@ onMounted(calculate)
       </template>
 
       <v-card variant="outlined" max-width="760" data-test="summary">
-        <v-card-title>{{ lan.quotationCalculation }}</v-card-title>
+        <v-card-title>{{ lan.quotationCalculationPerUnit }}</v-card-title>
         <v-card-text>
+          <v-select
+            v-if="unitChoices.length > 1"
+            :model-value="unit?.lineId ?? null"
+            :items="unitChoices"
+            :label="lan.quotationUnitProduct"
+            density="compact"
+            hide-details
+            class="mb-2"
+            data-test="unit-product"
+            @update:model-value="(v: string) => (unitLine = v)"
+          />
           <v-table density="compact">
             <thead>
               <tr>
@@ -390,26 +451,26 @@ onMounted(calculate)
             </thead>
             <tbody>
               <tr>
-                <td>{{ lan.quotationProductSubtotal }}</td>
+                <td>{{ lan.quotationProductUnitCost }}</td>
                 <td></td>
                 <td></td>
-                <td class="text-end">{{ money(plan.productMaterialCost) }}</td>
+                <td class="text-end">{{ price(unit?.productUnitCost) }}</td>
               </tr>
               <tr>
-                <td>{{ lan.quotationPackagingSubtotal }}</td>
+                <td>{{ lan.quotationPackagingUnitCost }}</td>
                 <td></td>
                 <td></td>
-                <td class="text-end">{{ money(plan.packagingMaterialCost) }}</td>
+                <td class="text-end">{{ price(unit?.packagingUnitCost) }}</td>
               </tr>
               <tr class="font-weight-medium">
-                <td>{{ lan.quotationMaterialCost }}</td>
+                <td>{{ lan.quotationBomUnitCost }}</td>
                 <td></td>
                 <td></td>
-                <td class="text-end" data-test="material-cost">{{ money(plan.materialCost) }}</td>
+                <td class="text-end" data-test="bom-unit-cost">{{ price(unit?.bomUnitCost) }}</td>
               </tr>
               <tr v-for="f in feesBeforeProfit" :key="f.code" data-test="fee-row">
                 <td>{{ feeLabel(f.code) }}</td>
-                <td class="text-caption">{{ baseLabel(f.base) }} {{ money(f.baseAmount) }}</td>
+                <td class="text-caption">{{ baseLabel(f.base) }} {{ price(f.baseAmount) }}</td>
                 <td>
                   <v-text-field
                     v-model.number="feeRates[f.code]"
@@ -420,22 +481,25 @@ onMounted(calculate)
                     :data-test="`rate-${f.code}`"
                   />
                 </td>
-                <td class="text-end">{{ money(f.amount) }}</td>
+                <td class="text-end">{{ price(f.amount) }}</td>
               </tr>
               <tr class="font-weight-medium">
                 <td>{{ lan.quotationCostBeforeProfit }}</td>
                 <td></td>
                 <td></td>
-                <td class="text-end">{{ money(plan.costBeforeProfit) }}</td>
+                <td class="text-end">{{ price(unit?.costBeforeProfit) }}</td>
               </tr>
               <tr data-test="profit-row">
                 <td>
                   {{ lan.quotationProfit }}
                   <div class="text-caption text-medium-emphasis">
                     {{
-                      plan.marginOverridden
+                      (unit?.marginOverridden ?? plan.marginOverridden)
                         ? lan.quotationMarginManual
-                        : fmt(lan.quotationMarginTier, money(plan.marginTierMin))
+                        : fmt(
+                            lan.quotationMarginTier,
+                            money(unit?.marginTierMin ?? plan.marginTierMin),
+                          )
                     }}
                   </div>
                 </td>
@@ -457,13 +521,13 @@ onMounted(calculate)
                     hide-details
                     data-test="margin-rate"
                   />
-                  <span v-else>{{ percent(plan.marginRate) }}</span>
+                  <span v-else>{{ percent(unit?.marginRate ?? plan.marginRate) }}</span>
                 </td>
-                <td class="text-end">{{ money(plan.profit) }}</td>
+                <td class="text-end">{{ price(unit?.profit) }}</td>
               </tr>
               <tr v-for="f in feesAfterProfit" :key="f.code" data-test="fee-row">
                 <td>{{ feeLabel(f.code) }}</td>
-                <td class="text-caption">{{ baseLabel(f.base) }} {{ money(f.baseAmount) }}</td>
+                <td class="text-caption">{{ baseLabel(f.base) }} {{ price(f.baseAmount) }}</td>
                 <td>
                   <v-text-field
                     v-model.number="feeRates[f.code]"
@@ -474,7 +538,19 @@ onMounted(calculate)
                     :data-test="`rate-${f.code}`"
                   />
                 </td>
-                <td class="text-end">{{ money(f.amount) }}</td>
+                <td class="text-end">{{ price(f.amount) }}</td>
+              </tr>
+              <tr class="font-weight-medium">
+                <td>{{ lan.quotationUnitPriceOfProduct }}</td>
+                <td></td>
+                <td>{{ plan.currency || '' }}</td>
+                <td class="text-end" data-test="unit-price">{{ price(unit?.unitPrice) }}</td>
+              </tr>
+              <tr>
+                <td>{{ lan.quotationLineTotal }}</td>
+                <td class="text-caption">× {{ qty(unit?.qty) }}</td>
+                <td></td>
+                <td class="text-end">{{ money(unit?.totalPrice) }}</td>
               </tr>
               <tr class="text-h6">
                 <td>{{ lan.quotationTotal }}</td>

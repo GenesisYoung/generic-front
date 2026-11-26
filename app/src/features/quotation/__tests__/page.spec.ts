@@ -110,6 +110,7 @@ function plan(): QuotationPlan {
         materialCost: 300,
         totalPrice: 420.56,
         unitPrice: 4.2056,
+        bomUnitCost: 3,
       },
     ],
     productItems: [
@@ -150,6 +151,8 @@ function plan(): QuotationPlan {
         priceSource: 'LAST_PURCHASE',
         lastPurchaseDate: '2026-10-23',
         lastPurchaseNo: 'P261023019',
+        itemType: 'MATERIAL',
+        unitTotalPrice: 3,
       },
     ],
     packagingItems: [
@@ -180,6 +183,8 @@ function plan(): QuotationPlan {
         priceSource: null,
         lastPurchaseDate: null,
         lastPurchaseNo: null,
+        itemType: 'PROCESSING',
+        unitTotalPrice: null,
       },
     ],
     productMaterialCost: 300,
@@ -201,6 +206,28 @@ function plan(): QuotationPlan {
     priceWarningCount: 1,
     warnings: ['有 1 行物料单价与上次采购价相差 20% 或以上'],
     generatedAt: null,
+    units: [
+      {
+        lineId: 'L1',
+        productCode: 'P1',
+        productName: '灯',
+        qty: 100,
+        productUnitCost: 3,
+        packagingUnitCost: 0,
+        bomUnitCost: 3,
+        fees: [
+          { code: 'MANAGEMENT', base: 'MATERIAL', ratePercent: 15, baseAmount: 3, amount: 0.45 },
+          { code: 'TAX', base: 'PRICE', ratePercent: 6, baseAmount: 3.9675, amount: 0.2381 },
+        ],
+        costBeforeProfit: 3.45,
+        marginRate: 15,
+        marginTierMin: 0,
+        marginOverridden: false,
+        profit: 0.5175,
+        unitPrice: 4.2056,
+        totalPrice: 420.56,
+      },
+    ],
   }
 }
 
@@ -276,6 +303,11 @@ describe('Quotation plan page', () => {
       manualPrices: {},
     })
     expect(page.find('[data-test="line-unit-L1"]').text()).toBe('4.2056')
+    expect(page.find('[data-test="unit-total-A"]').text()).toBe('3.00')
+    expect(page.find('[data-test="component-product-L1"]').text()).toBe('3.00')
+    expect(page.find('[data-test="processing-X"]').exists()).toBe(true)
+    expect(page.find('[data-test="bom-unit-cost"]').text()).toBe('3.00')
+    expect(page.find('[data-test="unit-price"]').text()).toBe('4.2056')
     expect(page.find('[data-test="total"]').text()).toBe('420.56')
     expect(page.find('[data-test="warnings"]').text()).toContain('20%')
     expect(page.findAll('[data-test="fee-row"]')).toHaveLength(2)
