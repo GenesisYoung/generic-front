@@ -1,365 +1,329 @@
-# Generic ERP Frontend — Development Process Document
+# Generic ERP Frontend — Development Guide
 
-> **Last Updated:** June 17, 2026  
-> **Stage:** Early-to-Mid Development (v0.0.0)
+> **Last updated:** 2026-11-28 · **Branch model:** feature branch → PR → `main`
 
----
+This guide is for developers who change the frontend. It explains how the app is organized, how
+login, permissions, localization and live notifications work, how to run it on your machine, and
+the rules every change follows. For a short overview see [README.md](README.md).
 
-## Table of Contents
+## Table of contents
 
-1. [Project Overview](#1-project-overview)
-2. [Technology Stack](#2-technology-stack)
-3. [Architecture](#3-architecture)
-4. [Project Structure](#4-project-structure)
-5. [Implemented Functionalities](#5-implemented-functionalities)
-6. [Environment & Configuration](#6-environment--configuration)
-7. [Development Workflow](#7-development-workflow)
-8. [Current Stage & Roadmap](#8-current-stage--roadmap)
-
----
-
-## 1. Project Overview
-
-`generic-front` is the **Vue 3 SPA frontend** of the Generic ERP system. It communicates exclusively with the `generic_erp` Spring Boot backend via a JSON REST API. At this stage the application provides a complete authentication shell, a permission-gated navigation sidebar, and the scaffolding for user and role management. Additional ERP feature modules (inventory, purchasing, HR, reporting, etc.) are defined in the navigation structure and ready to be built out.
+1. [Architecture](#1-architecture)
+2. [Authentication and session refresh](#2-authentication-and-session-refresh)
+3. [Permissions, routes and the sidebar](#3-permissions-routes-and-the-sidebar)
+4. [Localization](#4-localization)
+5. [Live notifications (WebSocket)](#5-live-notifications-websocket)
+6. [Local development](#6-local-development)
+7. [Environment variables](#7-environment-variables)
+8. [Testing and code quality](#8-testing-and-code-quality)
+9. [Docker image and deployment](#9-docker-image-and-deployment)
+10. [Conventions and adding a page](#10-conventions-and-adding-a-page)
+11. [Module status](#11-module-status)
 
 ---
 
-## 2. Technology Stack
+## 1. Architecture
 
-| Category | Technology | Version |
-|---|---|---|
-| Language | TypeScript (strict mode) | 5.9.3 |
-| UI Framework | Vue 3 (Composition API) | latest |
-| Build Tool | Vite | 7.3.1 |
-| Component Library | Vuetify 4 | 4.x |
-| Icon Set | Material Design Icons (MDI) | 7.4.47 |
-| State Management | Pinia | 3.0.4 |
-| State Persistence | pinia-plugin-persistedstate | 4.7.1 |
-| Routing | Vue Router | 5.0.3 |
-| HTTP Client | Axios | 1.14.0 |
-| Charts / Visualisation | Apache ECharts + vue-echarts | 6.0.0 / 8.0.1 |
-| Unit Testing | Vitest + @vue/test-utils | 4.0.18 / 2.4.6 |
-| Linting | Oxlint + ESLint | ~1.50.0 / 10.0.2 |
-| Formatting | Prettier | 3.8.1 |
-| Node.js Requirement | Node.js | ^20.19.0 or >=22.12.0 |
+### 1.1 Layers
 
----
-
-## 3. Architecture
-
-### Application Layers
-
-```
-┌────────────────────────────────────────────────────────┐
-│  Views  (pages rendered per route)                     │
-│  views/auth/LoginView.vue                              │
-│  views/home/ManagerView.vue                            │
-│  views/manage/UserManage.vue                           │
-│  views/manage/RoleList.vue  /  RoleDistribute.vue      │
-└─────────────────────┬──────────────────────────────────┘
-                      │ uses
-┌─────────────────────▼──────────────────────────────────┐
-│  Components  (shared UI building blocks)               │
-│  AppNavigation.vue  PaginationBar.vue  TabMenu.vue     │
-└─────────────────────┬──────────────────────────────────┘
-                      │ reads/writes
-┌─────────────────────▼──────────────────────────────────┐
-│  Pinia Stores  (global reactive state)                 │
-│  stores/auth.ts          — identity & tokens           │
-│  stores/tabs.ts          — open tab list               │
-└─────────────────────┬──────────────────────────────────┘
-                      │ calls
-┌─────────────────────▼──────────────────────────────────┐
-│  API Layer  (Axios instance + interceptors)             │
-│  api/http.ts  —  JWT injection, 401 auto-refresh       │
-└─────────────────────┬──────────────────────────────────┘
-                      │ HTTP/JSON
-┌─────────────────────▼──────────────────────────────────┐
-│  generic_erp  (Spring Boot backend)                    │
-└────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    V["Views (pages)<br/>views/manage, views/virtulization/purchase, views/virtulization/pmc"]
+    C["Shared components<br/>assets/components: AppNavigation, TabMenu, TheDialog, NotificationBell"]
+    F["Feature modules<br/>features/&lt;feature&gt;/api.ts + model.ts"]
+    S["Pinia stores<br/>auth, notification, tabs, utils"]
+    H["api/http.ts (Axios)<br/>Bearer token, Accept-Language, 401 → refresh"]
+    W["api/websocket.ts (STOMP)"]
+    L["lang/index.ts<br/>lan, currentLocale"]
+    B["Backend /api and /ws"]
+    V --> C
+    V --> F
+    V --> S
+    F --> H
+    S --> H
+    S --> W
+    H --> B
+    W --> B
+    V -. labels .-> L
+    H -. Accept-Language .-> L
 ```
 
-### Routing Model
+- **Views** are pages. They hold page state and layout only.
+- **Feature modules** (`src/features/<feature>/`) hold everything a feature needs that is not UI:
+  `api.ts` (typed backend calls), `model.ts` (types, pure helper functions, status rules) and
+  `__tests__/`. Keeping logic here makes it testable without mounting components.
+- **Stores** hold app-wide state: the signed-in user and permissions (`auth`), notifications
+  (`notification`), open tabs (`tabs`), global dialogs (`utils`).
+- **`api/http.ts`** is the only Axios instance. Never create another one.
 
-- **Hash history** mode (`/#/path`) — avoids server-side routing configuration.
-- `router/index.ts` registers a `beforeEach` guard: unauthenticated users are redirected to `/login`; logged-in users visiting `/login` are redirected to `/`.
-- Protected routes carry `meta: { requiresAuth: true }`.
-- Module sub-routes live in separate files under `router/file/`.
-
-### Token Refresh Strategy
-
-1. Axios response interceptor catches `401` responses.
-2. The first 401 triggers a `POST /api/auth/refresh/access` call using the stored refresh token.
-3. Concurrent requests that 401 during the refresh are queued and replayed once a new token is received.
-4. If the refresh itself fails, the user is logged out and redirected to `/login`.
-
----
-
-## 4. Project Structure
+### 1.2 Folder map
 
 ```
-generic-front/
-├── app/                             # Application root (renamed from Generic-ERP-Front-End/)
-│   ├── index.html                   # HTML entry point
-│   ├── package.json                 # Dependencies & npm scripts
-│   ├── vite.config.ts               # Vite config (@ alias → src/)
-│   ├── vitest.config.ts             # Test runner config (jsdom)
-│   ├── tsconfig*.json               # TypeScript configurations
-│   ├── eslint.config.ts             # ESLint rules
-│   ├── .oxlintrc.json               # Oxlint rules
-│   ├── .prettierrc.json             # Prettier settings
-│   ├── .editorconfig                # Editor normalisation
-│   └── src/
-│       ├── main.ts                  # App bootstrap: Pinia, Vuetify, Router
-│       ├── App.vue                  # Root component
-│       ├── api/
-│       │   ├── http.ts              # Axios instance with JWT & refresh interceptors
-│       │   └── api.ts               # Typed request helpers
-│       ├── assets/
-│       │   ├── config/
-│       │   │   ├── auth.ts          # Permission enum, Identity & Token types
-│       │   │   └── navigation.ts    # Sidebar menu item definitions
-│       │   ├── components/
-│       │   │   ├── AppNavigation.vue   # Sidebar navigation
-│       │   │   ├── PaginationBar.vue   # Table pagination controls
-│       │   │   └── TabMenu.vue         # Multi-tab interface
-│       │   └── styles/
-│       │       └── main.css
-│       ├── lang/
-│       │   ├── us_en.ts             # English string map
-│       │   └── china_zh.ts          # Simplified Chinese string map
-│       ├── router/
-│       │   ├── index.ts             # Root router + auth guard
-│       │   └── file/
-│       │       └── manage.ts        # /manage/* route definitions
-│       ├── stores/
-│       │   ├── auth.ts              # Auth state (login, refresh, logout)
-│       │   └── tabs.ts              # Tab state
-│       ├── theme/
-│       │   ├── theme.ts             # Theme interface
-│       │   └── primary.ts           # Default dark theme (violet #7C3AED)
-│       ├── types/
-│       │   ├── auth.ts              # LoginRequest, TokenPair, Identity, AuthState
-│       │   ├── interface.ts         # APIResponse, Tab, Pagination
-│       │   └── navigation.ts        # NavItem type
-│       ├── views/
-│       │   ├── HomeView.vue         # Authenticated landing page
-│       │   ├── MainEntry.vue        # Main layout shell with sidebar + tab bar
-│       │   ├── NotFound.vue         # 404 page
-│       │   ├── auth/
-│       │   │   └── LoginView.vue    # Login form
-│       │   ├── home/
-│       │   │   └── ManagerView.vue  # Manager dashboard
-│       │   └── manage/
-│       │       ├── UserManage.vue      # User management page
-│       │       ├── RoleManage.vue      # Role module container
-│       │       ├── RoleList.vue        # Role list/table
-│       │       ├── RoleDistribute.vue  # Assign permissions to roles
-│       │       └── PermissionManage.vue # Permission management (stub)
-│       └── __tests__/
-│           └── App.spec.ts
-├── CLAUDE.md                        # Claude Code project guidance
-├── README.md                        # Project documentation
-├── ERP FrontEnd Auth.pdf            # Auth architecture spec
-└── ERP_Auth_Architecture.png        # Auth architecture diagram
+app/src/
+├── main.ts / App.vue        bootstrap: Pinia, Vuetify, router
+├── api/                     http.ts, websocket.ts, notification.ts
+├── features/                customer-order, dashboard, followup-plan-group, followup-template,
+│                            order-audit, permissions, placement-task, purchase-exception,
+│                            purchase-followup, quotation
+├── views/
+│   ├── auth/LoginView.vue
+│   ├── home/                Dashboard.vue, RootDashboard.vue
+│   ├── manage/              UserManage, DepartmentManage, PermissionAllocation, PermissionManage,
+│   │                        ProductManage (empty), view/ (sub-pages), components/
+│   ├── virtulization/       DashboardView, purchase/*, pmc/* (folder name kept for history)
+│   ├── MainEntry.vue        layout: sidebar + tab bar + router view
+│   └── NotFound.vue
+├── router/                  index.ts (guard), file/manage.ts, file/virtualization.ts
+├── stores/                  auth.ts, notification.ts, tabs.ts, utils.ts
+├── lang/                    index.ts, china_zh.ts, us_en.ts, __tests__/ (key parity)
+├── assets/                  components/, config/, styles/
+├── theme/  types/  utils/  plugins/  definition/
+└── __tests__/
 ```
 
----
+## 2. Authentication and session refresh
 
-## 5. Implemented Functionalities
+The access token lives in the `auth` store (and `localStorage` key `auth-session`, so a reload
+keeps you signed in). The refresh token is **never** visible to JavaScript: the backend keeps it in
+the HttpOnly cookie `erp_refresh` (path `/api/auth`). Axios sends it because the instance uses
+`withCredentials: true`.
 
-### 5.1 Authentication
-
-- **Login page** (`/login`) — username + password form, calls `POST /api/auth/login`.
-- **JWT token pair** stored in Pinia auth store and persisted to `localStorage` via `pinia-plugin-persistedstate`.
-- **Automatic token refresh** — Axios interceptor silently exchanges an expired access token using the refresh token before retrying the original request.
-- **Concurrent 401 handling** — queues parallel failing requests during refresh; all replayed once the new token arrives.
-- **Logout** — clears store and localStorage, redirects to `/login`.
-- **Dev mode bypass** — set `VITE_APP_DEV_MODE=true` to skip login during development.
-
-### 5.2 Navigation & Routing
-
-- **Sidebar** (`AppNavigation.vue`) — 10 navigation items defined in `assets/config/navigation.ts`, each with an MDI icon and an i18n label key.
-- **Route auth guard** — `beforeEach` enforces `requiresAuth` meta flag on all protected routes.
-- **Multi-tab UI** (`TabMenu.vue` + `stores/tabs.ts`) — tracks open pages as tabs; switching tabs navigates the router.
-- **404 fallback** — unmatched routes redirect to `/`.
-- **Backend-driven sidebar** — sidebar menu items fetched from `GET /api/users/fetch/sidebar/menu` and merged with local config (as of June 17, 2026).
-
-### 5.3 User Management (`/manage/users`)
-
-- User list displayed in a table.
-- CRUD operation scaffolding connected to the backend.
-- Pagination via `PaginationBar.vue`.
-
-### 5.4 Role Management (`/manage/roles`)
-
-- **RoleList** (`/manage/roles/list`) — tabular display of all roles.
-- **RoleDistribute** (`/manage/roles/distribute`) — UI for assigning permissions to a role.
-- Both routes require `Permission.ROOT`.
-
-### 5.5 Permission Management
-
-- Route and component stub (`PermissionManage.vue`) defined at `/manage/permissions`.
-- Nine permission codes defined in the `Permission` enum: `ROOT`, `ACCOUNTANT`, `HR`, `MARKETING`, `PURCHASER`, `SALESMAN`, `BRAND_MANAGER`, `DESIGNER`, `CUSTOMER_RELATION`.
-
-### 5.6 Internationalisation (i18n)
-
-- String maps for **English** (`us_en.ts`) and **Simplified Chinese** (`china_zh.ts`).
-- Delivered to components via Vue's `provide` / `inject` pattern.
-- Navigation labels use i18n keys, allowing runtime language switching.
-
-### 5.7 Theming
-
-- Dark theme applied by default.
-- Primary colour: violet `#7C3AED`.
-- Theme interface (`theme/theme.ts`) supports Vuetify colour tokens for easy theme extension.
-
-### 5.8 Chart Support
-
-- ECharts (`vue-echarts`) installed and registered globally — ready for use in dashboard and report views.
-
----
-
-## 6. Environment & Configuration
-
-### Environment Variables
-
-Create `app/.env.local` (git-ignored) with:
-
-```env
-# Backend API base URL (required)
-VITE_BASE_URL=http://localhost:8080
-
-# Skip login screen in development (optional)
-VITE_APP_DEV_MODE=true
-
-# Comma-separated permission codes for the synthetic dev user (optional)
-VITE_APP_DEV_USER_ROLES=ROOT
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as Page
+    participant H as http.ts interceptor
+    participant B as Backend
+    P->>H: http.get('/followups')
+    H->>B: GET /api/followups<br/>Authorization: Bearer access, Accept-Language
+    B-->>H: 401 (access token expired)
+    H->>B: POST /api/auth/refresh/access (cookie erp_refresh)
+    Note over H: other requests that fail meanwhile wait in a queue
+    B-->>H: new access token + rotated cookie
+    H->>H: store new token, replay the queue
+    H->>B: GET /api/followups (retry)
+    B-->>P: 200 data
+    Note over H,B: refresh itself returns 401 → auth.logout() → /login
 ```
 
-### Code Style Rules
+Rules in `http.ts`:
 
-| Rule | Value |
+- **401** → refresh once, then retry. Only one refresh runs at a time; parallel 401s are queued.
+- **401 from the refresh call** → the session is over: log out and go to `/login`.
+- **403** → no refresh (the token is fine). Show the "no permission" dialog and reload the
+  user's permissions so the UI hides what they lost.
+- Anything else (500, 404, network error) passes through untouched.
+
+## 3. Permissions, routes and the sidebar
+
+Permissions are **string codes** such as `menu.customerOrder.read` or
+`menu.order-audit-task.read`, not numbers. After login the store loads them from
+`GET /api/users/permissions`.
+
+```mermaid
+flowchart LR
+    L[Login] --> P["auth.loadPermissions()<br/>GET /api/users/permissions"]
+    P --> G["router.beforeEach<br/>meta.requireAuth, meta.permission"]
+    P --> UI["auth.can(code) / canAny(...)<br/>hide buttons"]
+    L --> M["AppNavigation<br/>GET /api/users/fetch/sidebar/menu"]
+    M --> SB["Sidebar tree<br/>(menus come from the database)"]
+```
+
+- **Route guard** (`router/index.ts`): a route with `meta.requireAuth: true` needs a signed-in
+  user; a route with `meta.permission: ['code', ...]` needs **any one** of the codes.
+- **Buttons**: use `auth.can('code')` to hide actions. This is only a hint; the backend checks
+  every request with the same code.
+- **Sidebar**: the menu tree comes from the backend (`menu` table). A menu's route must match a
+  path in the Vue router. A parent only shows its children when the parent's route is empty.
+  To hide a menu, delete its row (the sidebar does not read `is_enabled`).
+
+## 4. Localization
+
+**Rule for every change:** every label is localized, and the backend answers in the page's
+language.
+
+- `src/lang/index.ts` is the **only** place to import from. It exports `lan` (the labels of the
+  current language), `currentLocale` (`zh-CN` or `en-US`), `fmt('{0} items', n)` and
+  `setLocale(...)`.
+- Never import `china_zh.ts` or `us_en.ts` directly. Add every new key to **both** files; a
+  test in `src/lang/__tests__/` fails when the key sets differ.
+- The choice is saved in `localStorage` (`erp.locale`, default `zh-CN`). Changing the language
+  reloads the page, so stores and the WebSocket reconnect with the new language.
+- `http.ts` sends `Accept-Language: <currentLocale>` on every request and `websocket.ts` sends it
+  on the STOMP CONNECT frame. That is how backend error messages and pushed notifications come
+  back in the same language.
+
+## 5. Live notifications (WebSocket)
+
+```mermaid
+sequenceDiagram
+    participant S as notification store
+    participant W as websocket.ts (STOMP)
+    participant B as Backend /ws
+    S->>W: connect(accessToken)
+    W->>B: CONNECT Authorization: Bearer, Accept-Language
+    B-->>W: CONNECTED
+    W->>B: SUBSCRIBE user notification queue
+    B-->>W: MESSAGE (title/content in the reader's language)
+    W-->>S: add to list → NotificationBell badge
+```
+
+- The broker URL comes from `VITE_MESSAGE_URL`. A value that starts with `/` (the normal case) is
+  turned into `ws://<current host>/ws` or `wss://...` on HTTPS, so it always uses the page's own
+  host. In development the Vite dev server proxies `/ws` to `ws://localhost:8080`.
+- The client reconnects every 5 s and uses 10 s heartbeats. Subscriptions requested before the
+  connection is ready are replayed after CONNECTED.
+- Stored notifications (history, read state) come from `/api/notifications`.
+
+## 6. Local development
+
+### 6.1 Prerequisites
+
+| Tool | Version |
 |---|---|
-| Semicolons | None |
-| Quotes | Single |
-| Line width | 100 characters |
+| Node.js | `^20.19.0` or `>=22.12.0` (the Docker build uses 22) |
+| npm | bundled with Node |
+| Backend | running on `http://localhost:8080` with MySQL and Redis (backend `DEVELOPMENT.md`, section 5) |
+| Editor | VS Code + Vue (Official) extension, recommended in `app/.vscode` |
+
+### 6.2 Run
+
+```bash
+cd app
+npm install
+cat > .env.local <<'EOF'
+VITE_BASE_URL=http://localhost:8080/api
+VITE_MESSAGE_URL=/ws
+EOF
+npm run dev                    # http://localhost:5173
+```
+
+```mermaid
+flowchart LR
+    BR["Browser<br/>localhost:5173"] -->|"REST with cookie<br/>http://localhost:8080/api"| BE["Backend :8080"]
+    BR -->|"/ws"| V["Vite dev server :5173"]
+    V -->|"proxy ws://localhost:8080"| BE
+```
+
+Why this works: `localhost:5173` and `localhost:8080` count as the **same site** for cookies, so
+the `SameSite=Strict` refresh cookie is still sent. The backend must allow the dev origin
+(`CORS_ALLOWED_ORIGINS=http://localhost:5173,...`, which is its default) and run with
+`AUTH_COOKIE_SECURE=false` on plain HTTP.
+
+Log in as **root / ChangeMe@2026** (created by the backend's database init script).
+
+### 6.3 Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| Every request goes to `http://localhost:5173/auth/...` and fails | `VITE_BASE_URL` is missing. It must end with `/api`. Restart `npm run dev` after editing `.env.local`. |
+| Login works, but after 15 minutes you are logged out | The refresh cookie was not stored: check `AUTH_COOKIE_SECURE=false` on the backend for HTTP, and that you use `localhost` for both, not `localhost` + `127.0.0.1`. |
+| CORS error in the console | Add your origin to the backend's `CORS_ALLOWED_ORIGINS`. |
+| Messages from the backend are in the wrong language | The backend bundle lacks the key, or the request did not go through `api/http.ts`. |
+| Notification bell never updates | The backend is not on `localhost:8080` (change the `/ws` proxy target in `vite.config.ts`), or the STOMP CONNECT was rejected (expired token). Set `VITE_APP_DEV_MODE=true` to log STOMP frames. |
+
+## 7. Environment variables
+
+Vite only exposes variables that start with `VITE_`. They are read at **build time**.
+
+| Variable | Development value | Docker image value | Meaning |
+|---|---|---|---|
+| `VITE_BASE_URL` | `http://localhost:8080/api` | `/api` | Base URL of the REST API, including `/api` |
+| `VITE_MESSAGE_URL` | `/ws` | `/ws` | STOMP endpoint; a path is resolved against the page's host |
+| `VITE_APP_DEV_MODE` | unset, or `true` to debug | `false` | When set, STOMP frames are logged to the console. Note: any non-empty value turns it on. |
+
+## 8. Testing and code quality
+
+```bash
+cd app
+npx vitest run                                   # all tests once (160 tests in 34 files, ~10 s)
+npx vitest run src/features/quotation            # one folder
+npm run test:unit                                # watch mode
+npm run type-check                               # vue-tsc
+npm run lint                                     # oxlint, then eslint (both auto-fix)
+npm run format                                   # prettier
+```
+
+- Tests live next to the code in `__tests__/` folders and run in jsdom.
+- Put business rules in `features/<feature>/model.ts` and test them there.
+- Run `npm run type-check` and `npx vitest run` before every PR.
+
+| Style rule | Value |
+|---|---|
+| Semicolons | none |
+| Quotes | single |
+| Line width | 100 |
 | Indent | 2 spaces |
-| Trailing commas | All |
+| Imports | always via the `@/` alias (`@/` = `app/src/`) |
+| TypeScript | `strict` + `noUncheckedIndexedAccess` (index access returns `T \| undefined`) |
 
-Enforced by Prettier + ESLint + Oxlint. Run `npm run format` to auto-fix formatting and `npm run lint` to check.
+## 9. Docker image and deployment
 
-### TypeScript Strictness
+The image is built from `app/Dockerfile` and is normally started by the Docker Compose stack in
+the backend repository (`generic_erp/deploy`, service `generic-erp-frontend`).
 
-`tsconfig.app.json` enables:
-- `strict: true`
-- `noUncheckedIndexedAccess: true` — array index and object key access returns `T | undefined`
-
----
-
-## 7. Development Workflow
-
-### Prerequisites
-
-- Node.js `^20.19.0` or `>=22.12.0`
-- npm (bundled with Node.js)
-- The `generic_erp` backend running locally (or a remote dev URL)
-
-### Running the Dev Server
-
-```bash
-cd app
-npm install          # first time only
-npm run dev          # starts Vite dev server at http://localhost:5173
+```mermaid
+flowchart LR
+    subgraph Build["Stage 1: node:22-alpine"]
+        A["npm ci"] --> B["vite build<br/>VITE_BASE_URL=/api<br/>VITE_MESSAGE_URL=/ws"]
+    end
+    subgraph Run["Stage 2: nginx:1.27-alpine"]
+        C["/usr/share/nginx/html<br/>built app"]
+        D["nginx/default.conf.template<br/>BACKEND_UPSTREAM=backend:8080"]
+    end
+    B --> C
 ```
 
-### Running Tests
+What `nginx/default.conf.template` does:
 
-```bash
-cd app
-npm run test:unit
-```
+- `/api/` and `/ws` are proxied to `${BACKEND_UPSTREAM}` with the `X-Forwarded-*` headers;
+  `/ws` gets the WebSocket upgrade headers and a 1 h read timeout.
+- Uploads up to 30 MB (`client_max_body_size`); the backend accepts 25 MB per request.
+- `/assets/` (hashed files) are cached for 30 days; `index.html` is `no-cache`, so a new release
+  shows up on the next reload.
+- Everything else falls back to `index.html` (the app uses hash routing).
 
-### Type Checking
+Deploy steps (from the backend repo): `cd generic_erp/deploy && docker compose up -d --build`.
+The frontend source is taken from `FRONTEND_DIR` (default `../../generic-front/app`), so clone
+both repositories next to each other. The site is published on `ERP_HTTP_PORT` (default 8088).
 
-```bash
-cd app
-npm run type-check
-```
+## 10. Conventions and adding a page
 
-### Lint & Format
+### Conventions
 
-```bash
-cd app
-npm run lint         # Oxlint then ESLint
-npm run format       # Prettier auto-fix
-```
+- Composition API with `<script setup lang="ts">`; Pinia stores in `setup` style.
+- Backend calls only through `@/api/http`, typed, inside `features/<feature>/api.ts`.
+- No hard-coded user-visible text: every label goes through `lan` from `@/lang`.
+- Show dates and numbers with the current locale.
+- Hide actions the user may not do with `auth.can(...)`, but never rely on it for security.
 
-### Production Build
+### Checklist for a new page
 
-```bash
-cd app
-npm run build        # outputs to app/dist/
-```
+1. **Feature module**: `src/features/<feature>/api.ts` and `model.ts`, plus tests.
+2. **View**: `src/views/virtulization/<area>/<Page>.vue` (or `views/manage/` for admin pages).
+3. **Route**: add it to `router/file/virtualization.ts` (or `manage.ts`) with
+   `meta: { title, icon, requireAuth: true, permission: ['menu.<page>.read'] }`. `title` is a
+   `lan` key.
+4. **Labels**: add every key to both `lang/china_zh.ts` and `lang/us_en.ts`.
+5. **Backend side**: the permission code and the sidebar menu row (route = the path from step 3)
+   are created by a backend SQL migration; the backend's message keys go in both bundles.
+6. Run `npm run type-check`, `npx vitest run` and `npm run lint`.
 
-### Branch Strategy
+## 11. Module status
 
-- `main` — stable, reviewed code
-- `claude/amazing-mayer-v3gn5l` — current active development branch
-- Feature branches: branch off `main`, open a PR back to `main`
-
-### Adding a New ERP Module
-
-1. Add a route entry in `router/file/<module>.ts` and import it in `router/index.ts`.
-2. Add a navigation item in `assets/config/navigation.ts`.
-3. Add i18n label keys to `lang/us_en.ts` and `lang/china_zh.ts`.
-4. Create the view component(s) under `views/<module>/`.
-5. Connect to the backend via typed Axios calls in `api/http.ts` or a dedicated module file.
-
----
-
-## 8. Current Stage & Roadmap
-
-### Current Stage: Auth Shell + Management Scaffolding
-
-**Commit Timeline:**
-
-| Date | Milestone |
+| Module | Status |
 |---|---|
-| April 15, 2026 | Home page v1.0 |
-| April 17, 2026 | User Manage v1.0 |
-| April 20–21, 2026 | User Manage v1.1, Role Manage v1.0 |
-| June 9, 2026 | Project restructure (`app/` directory), security setup |
-| June 17, 2026 | Sidebar connected to backend API |
-
-### Module Completion Status
-
-| Module | Status | Notes |
-|---|---|---|
-| Authentication (login, token refresh, logout) | Done | Full flow implemented & tested manually |
-| Route auth guards | Done | `beforeEach` guard active on all protected routes |
-| Sidebar navigation | Done | Backend-driven as of June 17, 2026 |
-| Tab management UI | Done | Pinia store + TabMenu component |
-| i18n (English + Chinese) | Done | String maps complete for existing screens |
-| Dark theme | Done | Vuetify primary theme applied |
-| User management page | In Progress (~60%) | List + CRUD scaffolded; edge cases pending |
-| Role management | In Progress (~50%) | List and distribute views exist; full CRUD pending |
-| Permission management | Stub only | Component created, no logic implemented |
-| Product management | Not started | Navigation item defined |
-| Inventory management | Not started | Navigation item defined |
-| Customer management | Not started | Navigation item defined |
-| Supplier management | Not started | Navigation item defined |
-| Report management | Not started | Navigation item defined; ECharts ready |
-| Settings page | Not started | Navigation item defined |
-| Unit / component tests | Minimal | Only `App.spec.ts` example exists |
-| Error notification UI | Not started | Toast/snackbar system not yet implemented |
-
-### Immediate Next Steps
-
-1. Complete user management CRUD (create, edit, delete with validation).
-2. Complete role management CRUD and permission assignment flow.
-3. Implement `PermissionManage.vue`.
-4. Add a global error notification system (Vuetify snackbar).
-5. Add i18n strings for all new screens.
-6. Begin the first new ERP module (TBD — HR or Inventory).
-7. Increase unit test coverage for auth store and API interceptors.
+| Login, session refresh via HttpOnly cookie, logout | Done |
+| Permission-code route guard, backend-driven sidebar, multi-tab workspace | Done |
+| zh-CN / en-US localization with language switch | Done |
+| Light/dark theme | Done |
+| Notifications (bell + live STOMP push) | Done |
+| Users, departments, permission allocation, permission management | Done |
+| Purchase dashboard, follow-up to-do, templates, plan groups | Done |
+| Placement tasks | Done |
+| Quotation list and quotation plan (报价方案) | Done; rules still being refined with purchasing |
+| Purchasing exceptions with PMC approval | Done |
+| PMC dashboard, customer order review, order audit tasks, evidence | Done |
+| Docker image (nginx, same-origin proxy) | Done |
+| Product management page | Not started (`ProductManage.vue` is empty; backend API exists) |
+| BOM, demand review, warehouse | Not started |

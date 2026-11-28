@@ -1,117 +1,106 @@
 # Generic ERP — Frontend
 
-The frontend of the **Generic ERP System**, designed and developed by Genesis Young. A Vue 3 single-page application that communicates exclusively with the [`generic_erp`](../generic_erp) Spring Boot backend via a JSON REST API. It provides a complete authentication shell, a permission-gated navigation sidebar, a multi-tab workspace UI, and management modules for users, roles, and permissions — with further ERP modules (products, inventory, customers, suppliers, reports) scaffolded in the navigation structure.
+The Vue 3 web client of the **Generic ERP** system. It talks to the Spring Boot backend
+([generic_erp](https://github.com/GenesisYoung/generic_erp)) over a JSON REST API (`/api`) and a
+STOMP WebSocket (`/ws`). The whole UI is available in **Simplified Chinese** (default) and
+**English**, and the backend answers in the same language as the page.
 
-> The application lives in the [`app/`](app) directory. See [app/README.md](app/README.md) for detailed developer documentation and [DEVELOPMENT.md](DEVELOPMENT.md) for the development process document and roadmap.
+> **Where to go next**
+> - Develop locally, architecture, conventions: [DEVELOPMENT.md](DEVELOPMENT.md)
+> - Deploy the whole system (frontend + backend + MySQL + Redis): [generic_erp/deploy/README.md](https://github.com/GenesisYoung/generic_erp/blob/main/deploy/README.md)
+> - Feature notes: [`app/docs/`](app/docs)
 
-## Tech Stack
+## What the user can do
+
+| Area | Pages |
+|---|---|
+| Sign-in | Login, automatic session refresh, logout, language switch, light/dark theme |
+| Workspace | Permission-driven sidebar, multi-tab workspace, notification bell with live push |
+| Purchasing | Purchase dashboard, follow-up to-do list, follow-up templates, follow-up plan groups, placement tasks, quotation list and quotation plan (报价方案), purchasing exceptions |
+| PMC | PMC dashboard, customer order review, order audit tasks, evidence management |
+| Administration | Users, departments, permission allocation (per user, per permission, department defaults), permission management (actions, permissions, menus) |
+
+What each user sees depends on the permission codes of their department role (plus per-user
+page overrides). The backend checks every request again.
+
+## How it fits together
+
+```mermaid
+flowchart LR
+    U[Browser] --> N["nginx (this repo's Docker image)<br/>serves the built app"]
+    N -->|"/api/* REST"| B["Spring Boot backend"]
+    N -->|"/ws STOMP"| B
+    B --> M[("MySQL")]
+    B --> R[("Redis")]
+```
+
+In production the page, `/api` and `/ws` share **one origin**, so there is no CORS and the
+HttpOnly refresh cookie (path `/api/auth`) is always sent.
+
+## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Vue 3 (Composition API) |
-| Language | TypeScript (strict, `noUncheckedIndexedAccess`) |
-| Build | Vite |
+| Framework | Vue 3.5 (Composition API, `<script setup>`) |
+| Language | TypeScript 5.9 (strict, `noUncheckedIndexedAccess`) |
+| Build | Vite 8 |
 | UI | Vuetify 4 + Material Design Icons |
-| State | Pinia + pinia-plugin-persistedstate |
+| State | Pinia 3 |
 | Routing | Vue Router 5 (hash history) |
-| HTTP | Axios with JWT / auto-refresh interceptors |
-| Charts | Apache ECharts via vue-echarts |
-| Testing | Vitest + @vue/test-utils |
+| HTTP | Axios with token-refresh interceptor |
+| Realtime | `@stomp/stompjs` 7 over native WebSocket |
+| Charts | Apache ECharts 6 via vue-echarts |
+| Testing | Vitest 4 + @vue/test-utils (jsdom) |
 | Linting | Oxlint + ESLint + Prettier |
+| Serving | nginx 1.27 (Docker image) |
 
-## Quick Start
+## Quick start (development)
 
-**Prerequisites:** Node.js `^20.19.0` or `>=22.12.0`, plus the `generic_erp` backend running locally.
+**You need:** Node.js `^20.19.0` or `>=22.12.0`, and the backend running on
+`http://localhost:8080` (see the backend's `DEVELOPMENT.md`).
 
 ```bash
 cd app
 npm install
-npm run dev        # Vite dev server at http://localhost:5173
+# app/.env.local (git-ignored)
+printf 'VITE_BASE_URL=http://localhost:8080/api\nVITE_MESSAGE_URL=/ws\n' > .env.local
+npm run dev            # http://localhost:5173
 ```
 
-Create `app/.env.local`:
+Log in as **root / ChangeMe@2026** (the account created by the backend's database init script).
 
-```env
-VITE_BASE_URL=http://localhost:8080   # backend API origin (required)
+### Common commands (run in `app/`)
 
-# Optional — skip login during local development:
-VITE_APP_DEV_MODE=true
-```
+| Command | What it does |
+|---|---|
+| `npm run dev` | Vite dev server on port 5173, proxies `/ws` to the backend |
+| `npm run build` | Type-check and build to `app/dist/` |
+| `npm run type-check` | `vue-tsc` only |
+| `npx vitest run` | All unit tests once (`npm run test:unit` starts watch mode) |
+| `npm run lint` | Oxlint then ESLint, both auto-fix |
+| `npm run format` | Prettier over `src/` |
 
-### Common Commands
-
-```bash
-npm run build        # type-check + production build (outputs to app/dist/)
-npm run type-check   # vue-tsc only
-npm run test:unit    # Vitest unit tests
-npm run lint         # oxlint then eslint (both auto-fix)
-npm run format       # prettier over src/
-```
-
-## Authentication Architecture
-
-![Front-End Auth Structure](ERP_Auth_Architecture.png)
-
-Authentication is JWT-based:
-
-1. `LoginView` calls `POST /api/auth/login`; the returned access/refresh token pair and identity are stored in the Pinia auth store (`src/stores/auth.ts`) and persisted to `localStorage`.
-2. The Axios instance (`src/api/http.ts`) attaches `Authorization: Bearer <token>` to every request.
-3. On a `401`, the interceptor silently exchanges the refresh token for a new access token and retries the original request. Concurrent failing requests are queued and replayed together after the refresh; if the refresh itself fails, the user is logged out and redirected to `/login`.
-4. A router `beforeEach` guard enforces `meta.requiresAuth` on protected routes; the sidebar menu is fetched from `GET /api/users/fetch/sidebar/menu` and filtered by permission.
-
-**Related files:** `src/assets/config/auth.ts` (Permission enum & auth types), `src/stores/auth.ts` (auth store), `src/router/index.ts` (auth guard), `src/api/http.ts` (Axios interceptors).
-
-## Permissions
-
-Numeric role codes defined in `src/assets/config/auth.ts`:
-
-```ts
-enum Permission {
-  ROOT = 1001,
-  ACCOUNTANT = 1002,
-  HR = 1003,
-  MARKETING = 1004,
-  PURCHASER = 1005,
-  SALESMAN = 1006,
-  BRAND_MANAGER = 1007,
-  DESIGNER = 1008,
-  CUSTOMER_RELATION = 1009,
-}
-```
-
-Routes under `/manage/*` currently require `Permission.ROOT`.
-
-## Project Structure
+## Project layout
 
 ```
-app/src/
-├── api/               # Axios instance (JWT + refresh interceptors), typed API calls
-├── assets/
-│   ├── config/        # Permission enum, sidebar navigation definitions
-│   ├── components/    # AppNavigation, PaginationBar, TabMenu
-│   └── styles/
-├── lang/              # i18n string maps: English (us_en) & Chinese (china_zh)
-├── router/            # Root router + auth guard; module routes under file/
-├── stores/            # Pinia stores: auth, tabs
-├── theme/             # Vuetify theme definitions (default: dark, violet primary)
-├── types/             # Shared TypeScript types
-└── views/
-    ├── auth/          # LoginView
-    ├── home/          # ManagerView dashboard
-    └── manage/        # UserManage, RoleManage, RoleList, RoleDistribute, PermissionManage
+generic-front/
+├── app/                      the application (all commands run here)
+│   ├── src/
+│   │   ├── api/              Axios instance (http.ts), STOMP client (websocket.ts), notifications
+│   │   ├── features/         one folder per business feature: api.ts + model.ts + tests
+│   │   ├── views/            pages: auth, home, manage (admin), virtulization (purchase, pmc)
+│   │   ├── router/           routes with meta.permission; file/manage.ts, file/virtualization.ts
+│   │   ├── stores/           Pinia: auth, notification, tabs, utils
+│   │   ├── lang/             index.ts (the only entry), china_zh.ts, us_en.ts
+│   │   ├── assets/           shared components (navigation, tabs, dialogs, notification bell)
+│   │   └── theme/  types/  utils/
+│   ├── nginx/                nginx config template for the Docker image
+│   ├── Dockerfile            build with Node 22, serve with nginx
+│   └── docs/                 feature notes (order audit)
+├── README.md
+└── DEVELOPMENT.md
 ```
 
-## Features
+## License and ownership
 
-- **i18n** — English and Simplified Chinese string maps, delivered via `provide`/`inject`; navigation labels use i18n keys for runtime language switching.
-- **Multi-tab workspace** — open pages are tracked as tabs (`stores/tabs.ts` + `TabMenu.vue`); switching tabs drives the router.
-- **Backend-driven sidebar** — menu items fetched from the API and merged with local config.
-- **Theming** — dark theme by default with violet (`#7C3AED`) primary; typed `Theme` interface for easy extension.
-- **Charts** — ECharts registered globally, ready for dashboard and report views.
-
-## Code Conventions
-
-- Path alias `@/` maps to `app/src/` — use it for all internal imports.
-- No semicolons, single quotes, 100-char lines, 2-space indent (enforced by Prettier).
-- Pinia stores use the Composition API `setup` style.
-- Dual-layer linting: Oxlint (fast, Rust-based) first, then ESLint for Vue/TS rules.
+Designed and developed by Genesis Young. Private project.
