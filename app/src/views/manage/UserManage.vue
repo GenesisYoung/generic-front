@@ -264,8 +264,6 @@ const formRoles = ref<number[]>([])
 const currentPage = ref(1)
 const pageSize = ref(5)
 
-const apiBase = (import.meta.env.VITE_BASE_URL ?? '').replace(/\/$/, '')
-
 const totalElements = ref(0)
 // const activeCount = computed(() => users.value.filter((user) => user.active).length)
 // const inactiveCount = computed(() => users.value.length - activeCount.value)
@@ -384,7 +382,8 @@ const saveUser = async () => {
     return
   }
   try {
-    const url = `${apiBase}/root/users`
+    // Relative path: the http client already adds VITE_BASE_URL.
+    const url = '/root/users'
     const response = editingUser.value
       ? await http.put(url, payload)
       : await http.post(url, payload)
@@ -415,7 +414,7 @@ const deleteUser = async (user: User) => {
     return // user pressed cancel
   }
   try {
-    const response = await http.delete(`${apiBase}/root/delete/${user.id}`)
+    const response = await http.delete(`/root/delete/${user.id}`)
     if (response.data.code === 202) {
       await globalUtil.activeDialog(lang?.deleteFail, lang?.cantDeleteRoot, undefined, 1)
       return
