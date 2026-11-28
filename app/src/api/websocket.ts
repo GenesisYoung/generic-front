@@ -3,6 +3,18 @@ import { currentLocale } from '@/lang'
 
 type MessageHandler<T> = (payload: T) => void
 
+/**
+ * VITE_MESSAGE_URL may be a full ws:// / wss:// URL (dev) or a path such as '/ws'
+ * (Docker: nginx on the same origin forwards it to the backend). A path is turned
+ * into an absolute URL on the page's own host, with wss:// when the page uses HTTPS.
+ */
+function resolveBrokerUrl(url: string | undefined): string {
+  const value = url && url.length > 0 ? url : '/ws'
+  if (!value.startsWith('/')) return value
+  const scheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${scheme}//${window.location.host}${value}`
+}
+
 class WebSocketService {
   private client: Client | null = null
   private subscriptions = new Map<string, StompSubscription>()
@@ -13,7 +25,7 @@ class WebSocketService {
     if (this.client?.active) return
 
     this.client = new Client({
-      brokerURL: import.meta.env.VITE_MESSAGE_URL,
+      brokerURL: resolveBrokerUrl(import.meta.env.VITE_MESSAGE_URL),
 
       // Sent as native headers on the STOMP CONNECT frame.
       // Accept-Language: pushed notifications are rendered in the page's language.
